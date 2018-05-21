@@ -407,7 +407,6 @@ func AddUnspentsToOutputs(stub shim.ChaincodeStubInterface, outputs Outputs) (Ou
 				fl := Round((value0+value1)*1e8) / 1e8
 				outputs[key].Amount = json.Number(strconv.FormatFloat(fl, 'f', -1, 64))
 			}
-
 		}
 	}
 
@@ -551,9 +550,7 @@ func is_version_0(stub shim.ChaincodeStubInterface, key string) bool {
 		fmt.Println("Asset not found: %s", key)
 		return false
 	}
-
 	value.Next()
-
 	return !value.HasNext()
 }
 
@@ -637,7 +634,7 @@ func check_inputs(stub shim.ChaincodeStubInterface, inputs Inputs, who string) (
 	return true, total_amount, label
 }
 
-// this function checks if the outputs all have the same label
+// this function checks if the outputs all have the label given as parameter
 // and returns a sum of them as float64
 func check_outputs(outputs Outputs, label string) (bool, float64) {
 	//TODO
@@ -685,7 +682,6 @@ func check_outputs(outputs Outputs, label string) (bool, float64) {
 func delete_old_keys(keylist *([]UserUnspents), inputs Inputs) bool {
 
 	for key, usr := range *keylist {
-
 		var ownerUnspents Inputs
 		b := bytes.NewReader(usr.Unspents)
 		err := json.NewDecoder(b).Decode(&ownerUnspents)
@@ -718,7 +714,6 @@ func delete_old_keys(keylist *([]UserUnspents), inputs Inputs) bool {
 		//rewrting his coin list
 		(*keylist)[key].Unspents = rejson
 	}
-
 	return true
 }
 
@@ -757,11 +752,58 @@ func update_keys_list(keylist *([]UserUnspents), input Input, output Output) boo
 	return true
 }
 
+func indexOfString(list []string, st string) int {
+
+	for key, value := range list {
+		if value == st {
+			return (key)
+		}
+	}
+	return (-1)
+}
+
+// this function update the list of users owning coins in the ledger
+func updateUserList(stub shim.ChaincodeStubInterface, keylist []UserUnspents) {
+
+	//generating user list as array of strings
+	var usersList []string
+	var usersListInLedger []string
+	for _, usr := range keylist {
+		usersList = append(usersList, usr.User)
+	}
+
+	value, err := stub.GetState("UserList")
+	if err != nil {
+		//TODO: handle error
+	}
+
+	b := bytes.NewReader(value)
+	err = json.NewDecoder(b).Decode(&usersListInLedger)
+	if err != nil {
+		//handle error
+	}
+
+	for _, usr := range usersList {
+		if indexOfString(usersListInLedger, usr) == -1 {
+			usersListInLedger = append(usersListInLedger, usr)
+		}
+	}
+
+	rejson, err0 := json.Marshal(usersListInLedger)
+	if err0 != nil {
+		//TODO: handle error
+	}
+
+	err = stub.PutState("UserList", rejson)
+	if err != nil {
+		//TODO: handle error
+	}
+}
+
 // this function update the ledger with the local copy of users unspent transactions (kl)
 func commit_updated_keys(stub shim.ChaincodeStubInterface, keylist []UserUnspents) {
 
 	for key, usr := range keylist {
-
 		fmt.Println("key = %d, user : %s", key, usr.User)
 
 		var coinlist Inputs
@@ -777,6 +819,9 @@ func commit_updated_keys(stub shim.ChaincodeStubInterface, keylist []UserUnspent
 		stub.PutState(usr.User, usr.Unspents)
 		//TODO : handle failure
 	}
+
+	updateUserList(stub, keylist)
+	//TODO : handle errors
 }
 
 //given a single UserUnspents, this function tells you if it is
@@ -903,6 +948,10 @@ func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 
 	if total_in < total_out {
 		return "", fmt.Errorf("Error : input amount is smaller than output amount")
+	}
+
+	if total_in > total_out {
+		return "", fmt.Errorf("Error : input amount is bigger than output amount")
 	}
 
 	deletion_fail := delete_inputs(stub, inputs)
