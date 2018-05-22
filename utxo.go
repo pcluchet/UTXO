@@ -237,26 +237,25 @@ func gethistory(stub shim.ChaincodeStubInterface, args []string) (string, error)
 	return string(history), nil
 }
 
-func decode_io(arg string, adress interface{}) bool {
+func decode_io(arg string, adress interface{}) error {
 
 	b := bytes.NewReader([]byte(arg))
 
 	err := json.NewDecoder(b).Decode(adress)
 
 	if err != nil {
-		fmt.Println("Error %s", err)
-		return false
+		return fmt.Errorf("Error %s", err)
 	}
 
 	if adress == nil {
-		fmt.Println("NULL")
+		return fmt.Errorf("nil adress given")
 	}
 
 	fmt.Printf("Parsed at io level : %+v", adress)
-	return true
+	return nil
 }
 
-func delete_inputs(stub shim.ChaincodeStubInterface, inputs Inputs) bool {
+func delete_inputs(stub shim.ChaincodeStubInterface, inputs Inputs) error {
 
 	fmt.Println("Now deleting inputs")
 
@@ -269,12 +268,11 @@ func delete_inputs(stub shim.ChaincodeStubInterface, inputs Inputs) bool {
 		fmt.Println("DELETED KEY : %s", retreiving_key)
 		err := stub.DelState(retreiving_key)
 		if err != nil {
-			fmt.Println("Error %s", err)
-			return false
+			return fmt.Errorf("Error %s", err)
 		}
 		i++
 	}
-	return true
+	return nil
 }
 
 // Given a owner and an output list, this function returns the index of the owner
@@ -294,7 +292,7 @@ func IndexOfUserInOutputs(user string, outputs Outputs) int {
 
 // This function sums up the outputs that have the same owner and currency (label)
 // And returns a new output list where each user have only one output per currency
-func regroup_outputs(outputs Outputs) Outputs {
+func regroup_outputs(outputs Outputs) (Outputs, error) {
 	var ret Outputs
 
 	for _, v := range outputs {
@@ -304,12 +302,12 @@ func regroup_outputs(outputs Outputs) Outputs {
 
 			value0, err := v.Amount.Float64()
 			if err != nil {
-				//TODO : handle error
+				return ret, fmt.Errorf("Parsing error : %s", err)
 			}
 
 			value1, err := ret[index].Amount.Float64()
 			if err != nil {
-				//TODO : handle error
+				return ret, fmt.Errorf("Parsing error : %s", err)
 			}
 
 			fl := Round((value0+value1)*1e8) / 1e8
@@ -319,54 +317,52 @@ func regroup_outputs(outputs Outputs) Outputs {
 			ret = append(ret, v)
 		}
 	}
-	return ret
+	return ret, nil
 }
 
 // this function returns the unspent inputs for the user given in parameter
-func UnspentTxForUser(stub shim.ChaincodeStubInterface, user string) (Inputs, bool) {
+func UnspentTxForUser(stub shim.ChaincodeStubInterface, user string) (Inputs, error) {
 	var unspents Inputs
 
 	value, err := stub.GetState(user)
 	if err != nil {
-		return unspents, false
+		return unspents, fmt.Errorf("Error %s", err)
 	}
 	if value == nil {
-		return unspents, true
+		return unspents, fmt.Errorf("cannot get tx for user %s", user)
 	}
 	b := bytes.NewReader([]byte(value))
 	err0 := json.NewDecoder(b).Decode(&unspents)
 
 	if err0 != nil {
-		fmt.Println("Error %s", err0)
-		return unspents, false
+		return unspents, fmt.Errorf("Error %s", err0)
 	}
-
-	return unspents, true
+	return unspents, nil
 }
 
 // this function returns the list of every unspent transaction owned by the users un an output list
-func UnspentTxForUsersInOuputs(stub shim.ChaincodeStubInterface, outputs Outputs) (Inputs, bool) {
+func UnspentTxForUsersInOuputs(stub shim.ChaincodeStubInterface, outputs Outputs) (Inputs, error) {
 	var ret Inputs
 	for _, otp := range outputs {
-		more, succes := UnspentTxForUser(stub, otp.Owner)
-		if !succes {
-			return ret, false
+		more, failure := UnspentTxForUser(stub, otp.Owner)
+		if failure != nil {
+			return ret, fmt.Errorf("Error %s", failure)
 		}
 		ret = append(ret, more...)
 	}
-	return ret, true
+	return ret, nil
 }
 
 // this function add the amount of the last unspent transaction for a user to
 // the output list for each user, it returns a updated output list,
 // and the inputs that have been used (which will need to be deleted in order to avoid double spending)
-func AddUnspentsToOutputs(stub shim.ChaincodeStubInterface, outputs Outputs) (Outputs, Inputs, bool) {
+func AddUnspentsToOutputs(stub shim.ChaincodeStubInterface, outputs Outputs) (Outputs, Inputs, error) {
 
 	var unspent_value Output
 	var inputs_to_add Inputs
-	unspents, success := UnspentTxForUsersInOuputs(stub, outputs)
-	if !success {
-		//TODO : handle error
+	unspents, fail := UnspentTxForUsersInOuputs(stub, outputs)
+	if fail != nil {
+		return outputs, inputs_to_add, fmt.Errorf("Error : %s", fail)
 	}
 	fmt.Println(unspents)
 
@@ -379,7 +375,7 @@ func AddUnspentsToOutputs(stub shim.ChaincodeStubInterface, outputs Outputs) (Ou
 		if err != nil {
 
 			fmt.Println("Error getting")
-			return outputs, inputs_to_add, false
+			return outputs, inputs_to_add, fmt.Errorf("Error : %s", err)
 		}
 
 		b := bytes.NewReader(raw)
@@ -396,12 +392,12 @@ func AddUnspentsToOutputs(stub shim.ChaincodeStubInterface, outputs Outputs) (Ou
 
 				value0, err := unspent_value.Amount.Float64()
 				if err != nil {
-					//TODO : handle error
+					return outputs, inputs_to_add, fmt.Errorf("Error : %s", err)
 				}
 
 				value1, err := otp.Amount.Float64()
 				if err != nil {
-					//TODO : handle error
+					return outputs, inputs_to_add, fmt.Errorf("Error : %s", err)
 				}
 
 				fl := Round((value0+value1)*1e8) / 1e8
@@ -411,43 +407,51 @@ func AddUnspentsToOutputs(stub shim.ChaincodeStubInterface, outputs Outputs) (Ou
 	}
 
 	fmt.Println(outputs)
-	return outputs, inputs_to_add, false
+	return outputs, inputs_to_add, nil
 }
 
 // this function create the new assets given in outputs
 // it makes sure users does not have multiple unspents transactions.
 // it also maintain a local copy of each unspent transaction for
 // users concerned by the transaction (kl)
-func set_outputs(stub shim.ChaincodeStubInterface, txid string, outputs Outputs, inputs Inputs, kl *([]UserUnspents)) bool {
+func set_outputs(stub shim.ChaincodeStubInterface, txid string, outputs Outputs, inputs Inputs, kl *([]UserUnspents)) error {
 
 	var i int
 	var new_input Input
+	var failure error
 	i = 0
 
 	fmt.Println("Before")
 	fmt.Println(outputs)
 
-	outputs = regroup_outputs(outputs)
+	outputs, failure = regroup_outputs(outputs)
+	if failure != nil {
+		return fmt.Errorf("Error : %s", failure)
+	}
 
 	fmt.Println("Between")
 	fmt.Println(outputs)
 
-	var success bool
 	var inputs_to_add Inputs
-	outputs, inputs_to_add, success = AddUnspentsToOutputs(stub, outputs)
-	if !success {
-		//TODO : handle error
+	outputs, inputs_to_add, failure = AddUnspentsToOutputs(stub, outputs)
+	if failure != nil {
+		return fmt.Errorf("Error : %s", failure)
 	}
 
-	successOut, _ := check_outputs(outputs, outputs[0].Label)
-	if !successOut {
-		return false
+	failureOut, _ := check_outputs(outputs, outputs[0].Label)
+	if failureOut != nil {
+		return fmt.Errorf("Error : %s", failureOut)
 	}
 
 	fmt.Println(inputs_to_add)
-	delete_inputs(stub, inputs_to_add)
-	delete_old_keys(kl, inputs_to_add)
-	//TODO : handle error
+	failure = delete_inputs(stub, inputs_to_add)
+	if failure != nil {
+		return fmt.Errorf("Error : %s", failure)
+	}
+	failure = delete_old_keys(kl, inputs_to_add)
+	if failure != nil {
+		return fmt.Errorf("Error : %s", failure)
+	}
 
 	fmt.Println("After")
 	fmt.Println(outputs)
@@ -462,8 +466,8 @@ func set_outputs(stub shim.ChaincodeStubInterface, txid string, outputs Outputs,
 		new_input.J = i
 
 		aku_fail := update_keys_list(kl, new_input, v)
-		if !aku_fail {
-			//TODO
+		if aku_fail != nil {
+			return fmt.Errorf("Error : %s", aku_fail)
 		}
 
 		createdkey := fmt.Sprintf("%s_%d", txid, i)
@@ -471,15 +475,17 @@ func set_outputs(stub shim.ChaincodeStubInterface, txid string, outputs Outputs,
 		rejson, err := json.Marshal(v)
 
 		if err != nil {
-			//handle problem
-			return false
+			return fmt.Errorf("Error parsing : %s", err)
 		}
 		fmt.Println("CREATED KEY : %s", createdkey)
 		fmt.Println(string(rejson))
-		stub.PutState(createdkey, rejson)
+		failure = stub.PutState(createdkey, rejson)
+		if failure != nil {
+			return fmt.Errorf("Error : %s", failure)
+		}
 		i++
 	}
-	return true
+	return nil
 }
 
 //This function mint the coins given in arg[1] (outputs)
@@ -493,22 +499,22 @@ func mint(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	ret := "coin minted"
 
 	decode_outputs_fail := decode_io(args[1], &outputs)
-	if !decode_outputs_fail {
-		fmt.Println("Error decoding outputs")
+	if decode_outputs_fail != nil {
+		return "", fmt.Errorf("Error in output decoding : %s", decode_outputs_fail)
 	}
 
 	fmt.Println("\n\n\n\n\nGetting keys\n\n\n\n")
 	keys, fail := get_keys_for_owners(stub, outputs, nil)
-	if !fail {
-		//TODO
+	if fail != nil {
+		return "", fmt.Errorf("Error:  %s", fail)
 	}
 
 	txid := stub.GetTxID()
 	fmt.Println("Minting with txid=", txid)
 	set_outputs_fail := set_outputs(stub, txid, outputs, nil, &keys)
-	if !set_outputs_fail {
+	if set_outputs_fail != nil {
 		fmt.Println("Error decoding outputs")
-		return "", fmt.Errorf("Error in outputs")
+		return "", fmt.Errorf("Error in outputs : %s", set_outputs_fail)
 	}
 	commit_updated_keys(stub, keys)
 	return string(ret), nil
@@ -516,30 +522,27 @@ func mint(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 
 // given an array of byte representing json format of an output,
 // this function parse it and write it to adress
-func decode_single_transaction(arg string, adress *Output) bool {
+func decode_single_transaction(arg string, adress *Output) error {
 
 	b := bytes.NewReader([]byte(arg))
 
 	err := json.NewDecoder(b).Decode(adress)
 
 	if err != nil {
-		fmt.Println("Error %s", err)
-		return false
+		return fmt.Errorf("Error %s", err)
 	}
 
 	if adress == nil {
-		fmt.Println("NULL")
+		return fmt.Errorf("nil pointer received")
 	}
 
 	fmt.Printf("Parsed at single transaction level : %+v", adress)
-	return true
+	return nil
 }
 
 // this function returns a boolean indicating if a given key has
 // already been updated in the ledger
 func is_version_0(stub shim.ChaincodeStubInterface, key string) bool {
-	//TODO : errors
-
 	value, err := stub.GetHistoryForKey(key)
 
 	if err != nil {
@@ -557,7 +560,7 @@ func is_version_0(stub shim.ChaincodeStubInterface, key string) bool {
 // this function parse an input list and makes sure they all have the same owner and label,
 // and have never been updated. It also returns the total amount of the inputs as a float64,
 // and the label of the input's transaction
-func check_inputs(stub shim.ChaincodeStubInterface, inputs Inputs, who string) (bool, float64, string) {
+func check_inputs(stub shim.ChaincodeStubInterface, inputs Inputs, who string) (error, float64, string) {
 	//TODO
 	//[x] same owner
 	//[x] same labels
@@ -585,27 +588,30 @@ func check_inputs(stub shim.ChaincodeStubInterface, inputs Inputs, who string) (
 
 		if !v0 {
 
-			fmt.Println("Error : the key has been updated at leat once")
-			return false, total_amount, label
+			return fmt.Errorf("Error : the key has been updated at leat once"), total_amount, label
 		}
 
 		fmt.Println("Retreiving key is :%s", retreiving_key)
 		tran, err := stub.GetState(retreiving_key)
-		//TODO : error case if key invalid
 		if err != nil {
-			//TODO : handle problem
+			return fmt.Errorf("Error :%s", err), total_amount, label
 		}
+
+		if tran == nil {
+			return fmt.Errorf("Error getting transaction"), total_amount, label
+		}
+
 		fmt.Println(string(tran))
 
-		ret := decode_single_transaction(string(tran), &output)
-		if !ret {
-			//TODO : handle problem
+		err = decode_single_transaction(string(tran), &output)
+		if err != nil {
+			return fmt.Errorf("Error : %s", err), total_amount, label
 		}
 
 		//Check always said owner
 		if output.Owner != who {
-			fmt.Println("Error : owners mismatch")
-			return false, total_amount, label
+			return fmt.Errorf("Error : owners mismatch"), total_amount, label
+
 		}
 
 		//Check always same label (currency)
@@ -613,13 +619,12 @@ func check_inputs(stub shim.ChaincodeStubInterface, inputs Inputs, who string) (
 			label = output.Label
 		} else {
 			if output.Label != label {
-				fmt.Println("Error : labels mismatch")
-				return false, total_amount, label
+				return fmt.Errorf("Error : labels mismatch"), total_amount, label
 			}
 		}
 		amount, err := output.Amount.Float64()
 		if err != nil {
-			//TODO : handle problem
+			return fmt.Errorf("Error : %s", err), total_amount, label
 		}
 
 		fmt.Println("amount =", amount)
@@ -631,12 +636,12 @@ func check_inputs(stub shim.ChaincodeStubInterface, inputs Inputs, who string) (
 	}
 
 	fmt.Println("Total amount of inputs : %f", total_amount)
-	return true, total_amount, label
+	return nil, total_amount, label
 }
 
 // this function checks if the outputs all have the label given as parameter
 // and returns a sum of them as float64
-func check_outputs(outputs Outputs, label string) (bool, float64) {
+func check_outputs(outputs Outputs, label string) (error, float64) {
 	//TODO
 	//[x] same labels
 	//[x] sum
@@ -657,12 +662,11 @@ func check_outputs(outputs Outputs, label string) (bool, float64) {
 
 		//Check always same label (currency)
 		if output.Label != label {
-			fmt.Println("Error : labels mismatch")
-			return false, total_amount
+			return fmt.Errorf("Labels mismatch in outputs"), total_amount
 		}
 		amount, err := output.Amount.Float64()
 		if err != nil {
-			//TODO : handle problem
+			return fmt.Errorf("Error : %s", err), total_amount
 		}
 
 		fmt.Println("amount =", amount)
@@ -674,20 +678,19 @@ func check_outputs(outputs Outputs, label string) (bool, float64) {
 	}
 
 	fmt.Println("Total amount of outputs : %f", total_amount)
-	return true, total_amount
+	return nil, total_amount
 }
 
 // given a local copy of users unspent transactions (kl), and an input list, this function
 // delete these inputs in kl
-func delete_old_keys(keylist *([]UserUnspents), inputs Inputs) bool {
+func delete_old_keys(keylist *([]UserUnspents), inputs Inputs) error {
 
 	for key, usr := range *keylist {
 		var ownerUnspents Inputs
 		b := bytes.NewReader(usr.Unspents)
 		err := json.NewDecoder(b).Decode(&ownerUnspents)
 		if err != nil {
-			//TODO : handle error
-			return false
+			return fmt.Errorf("Error : %s", err)
 		}
 		//deleting old coin
 		//ownerUnspents = append(ownerUnspents, input)
@@ -708,18 +711,17 @@ func delete_old_keys(keylist *([]UserUnspents), inputs Inputs) bool {
 		//reconverting his coin list in bytes
 		rejson, err := json.Marshal(ownerUnspents)
 		if err != nil {
-			fmt.Println("Error %s", err)
-			return false
+			return fmt.Errorf("Error : %s", err)
 		}
 		//rewrting his coin list
 		(*keylist)[key].Unspents = rejson
 	}
-	return true
+	return nil
 }
 
 // given a local copy of users unspent transactions (kl), and a couple of form (input, output),
 // this function update kl to add the new reference to unspent transaction for the user.
-func update_keys_list(keylist *([]UserUnspents), input Input, output Output) bool {
+func update_keys_list(keylist *([]UserUnspents), input Input, output Output) error {
 
 	fmt.Println("Updating\n\n")
 	for key, usr := range *keylist {
@@ -732,8 +734,7 @@ func update_keys_list(keylist *([]UserUnspents), input Input, output Output) boo
 				b := bytes.NewReader(usr.Unspents)
 				err := json.NewDecoder(b).Decode(&ownerUnspents)
 				if err != nil {
-					//TODO : handle error
-					return false
+					return fmt.Errorf("Error : %s", err)
 				}
 			}
 			//adding new coin
@@ -742,14 +743,14 @@ func update_keys_list(keylist *([]UserUnspents), input Input, output Output) boo
 			//reconverting his coin list in bytes
 			rejson, err := json.Marshal(ownerUnspents)
 			if err != nil {
-				fmt.Println("Error %s", err)
-				return false
+				return fmt.Errorf("Error : %s", err)
 			}
 			//rewrting his coin list
 			(*keylist)[key].Unspents = rejson
 		}
 	}
-	return true
+
+	return nil
 }
 
 func indexOfString(list []string, st string) int {
@@ -763,7 +764,7 @@ func indexOfString(list []string, st string) int {
 }
 
 // this function update the list of users owning coins in the ledger
-func updateUserList(stub shim.ChaincodeStubInterface, keylist []UserUnspents) {
+func updateUserList(stub shim.ChaincodeStubInterface, keylist []UserUnspents) error {
 
 	//generating user list as array of strings
 	var usersList []string
@@ -774,13 +775,17 @@ func updateUserList(stub shim.ChaincodeStubInterface, keylist []UserUnspents) {
 
 	value, err := stub.GetState("UserList")
 	if err != nil {
-		//TODO: handle error
+		return fmt.Errorf("Error : %s", err)
+	}
+
+	if value == nil {
+		return fmt.Errorf("Error : empty asset")
 	}
 
 	b := bytes.NewReader(value)
 	err = json.NewDecoder(b).Decode(&usersListInLedger)
 	if err != nil {
-		//handle error
+		return fmt.Errorf("Error : %s", err)
 	}
 
 	for _, usr := range usersList {
@@ -791,17 +796,18 @@ func updateUserList(stub shim.ChaincodeStubInterface, keylist []UserUnspents) {
 
 	rejson, err0 := json.Marshal(usersListInLedger)
 	if err0 != nil {
-		//TODO: handle error
+		return fmt.Errorf("Error : %s", err0)
 	}
 
 	err = stub.PutState("UserList", rejson)
 	if err != nil {
-		//TODO: handle error
+		return fmt.Errorf("Error : %s", err)
 	}
+	return nil
 }
 
 // this function update the ledger with the local copy of users unspent transactions (kl)
-func commit_updated_keys(stub shim.ChaincodeStubInterface, keylist []UserUnspents) {
+func commit_updated_keys(stub shim.ChaincodeStubInterface, keylist []UserUnspents) error {
 
 	for key, usr := range keylist {
 		fmt.Println("key = %d, user : %s", key, usr.User)
@@ -810,18 +816,24 @@ func commit_updated_keys(stub shim.ChaincodeStubInterface, keylist []UserUnspent
 		b := bytes.NewReader(usr.Unspents)
 		err := json.NewDecoder(b).Decode(&coinlist)
 		if err != nil {
-			//TODO : handle error
+			fmt.Errorf("Err : %s", err)
 		}
 		for _, coin := range coinlist {
 			fmt.Println("txid = %s, id : %d", coin.Txid, coin.J)
 		}
 
-		stub.PutState(usr.User, usr.Unspents)
-		//TODO : handle failure
+		err = stub.PutState(usr.User, usr.Unspents)
+		if err != nil {
+			fmt.Errorf("Err : %s", err)
+		}
 	}
 
-	updateUserList(stub, keylist)
-	//TODO : handle errors
+	err := updateUserList(stub, keylist)
+	if err != nil {
+		fmt.Errorf("Err : %s", err)
+	}
+
+	return nil
 }
 
 //given a single UserUnspents, this function tells you if it is
@@ -840,7 +852,7 @@ func user_already_in_list(new_user UserUnspents, UsersToUpdate []UserUnspents) b
 
 // this function generate a list of UserUnspents containing all the users
 // mentionned in outputs or inputs
-func get_keys_for_owners(stub shim.ChaincodeStubInterface, outputs Outputs, inputs Inputs) ([]UserUnspents, bool) {
+func get_keys_for_owners(stub shim.ChaincodeStubInterface, outputs Outputs, inputs Inputs) ([]UserUnspents, error) {
 	//TODO
 	//[ ] tidy, restructure flow (two putstate...)
 
@@ -855,31 +867,34 @@ func get_keys_for_owners(stub shim.ChaincodeStubInterface, outputs Outputs, inpu
 		current_user.User = output.Owner
 		if !user_already_in_list(current_user, UsersToUpdate) {
 			current_user.Unspents, err = stub.GetState(output.Owner)
-			//TODO : handle error
+			if err != nil {
+				return UsersToUpdate, fmt.Errorf("Err : %s", err)
+			}
+
 			UsersToUpdate = append(UsersToUpdate, current_user)
 		}
 	}
 
 	if inputs != nil {
 		for _, input := range inputs {
-
-			//fmt.Println("Handling now : key[%s] value[%s]\n", cle, input)
 			var output Output
 			var tran []byte
 			retreiving_key := fmt.Sprintf("%s_%d", input.Txid, input.J)
 			fmt.Println("Retreiving key is :%s", retreiving_key)
 			tran, err = stub.GetState(retreiving_key)
-			//TODO : error case if key invalid
 			if err != nil {
-				//TODO : handle problem
+				return UsersToUpdate, fmt.Errorf("Err : %s", err)
 			}
+			if tran == nil {
+				return UsersToUpdate, fmt.Errorf("Err : failed to retreive transaction")
+			}
+
 			fmt.Println(string(tran))
 
 			ret := decode_single_transaction(string(tran), &output)
-			if !ret {
-				//TODO : handle problem
+			if ret != nil {
+				return UsersToUpdate, fmt.Errorf("Err : %s", ret)
 			}
-
 			current_user.User = output.Owner
 			if !user_already_in_list(current_user, UsersToUpdate) {
 				current_user.Unspents, err = stub.GetState(output.Owner)
@@ -901,17 +916,14 @@ func get_keys_for_owners(stub shim.ChaincodeStubInterface, outputs Outputs, inpu
 		b := bytes.NewReader(usr.Unspents)
 		err := json.NewDecoder(b).Decode(&coinlist)
 		if err != nil {
-			//TODO : handle error
+			return UsersToUpdate, fmt.Errorf("Err : %s", err)
 		}
 		for _, coin := range coinlist {
 			fmt.Println("txid = %s, id : %d", coin.Txid, coin.J)
 		}
-
-		//stub.PutState(usr.User, usr.Unspents)
-		//TODO : handle failure
 	}
 
-	return UsersToUpdate, true
+	return UsersToUpdate, nil
 }
 
 // This function takes inputs in arg[0] and outputs in arg[1],
@@ -919,7 +931,11 @@ func get_keys_for_owners(stub shim.ChaincodeStubInterface, outputs Outputs, inpu
 func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	//TODO:
 	//[ ] args[2] sign
-	//[ ] check amount of params
+	//[x] check amount of params
+
+	if len(args) != 3 {
+		return "", fmt.Errorf("Incorrect amount of arguments. Expecting 3")
+	}
 
 	fmt.Println("Spend transaction triggered")
 
@@ -928,22 +944,22 @@ func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	ret := "spending ok"
 
 	decode_inputs_fail := decode_io(args[0], &inputs)
-	if !decode_inputs_fail {
-		return "", fmt.Errorf("Error decoding inputs")
+	if decode_inputs_fail != nil {
+		return "", fmt.Errorf("Error decoding inputs : %s", decode_inputs_fail)
 	}
 	check_in_fail, total_in, label := check_inputs(stub, inputs, args[2])
-	if !check_in_fail {
-		return "", fmt.Errorf("Error checking inputs")
+	if check_in_fail != nil {
+		return "", fmt.Errorf("Error checking inputs : %s", check_in_fail)
 	}
 
 	decode_outputs_fail := decode_io(args[1], &outputs)
-	if !decode_outputs_fail {
+	if decode_outputs_fail != nil {
 		return "", fmt.Errorf("Error decoding outputs")
 	}
 
 	check_out_fail, total_out := check_outputs(outputs, label)
-	if !check_out_fail {
-		return "", fmt.Errorf("Error checking outputs")
+	if check_out_fail != nil {
+		return "", fmt.Errorf("Error checking outputs : %s", check_out_fail)
 	}
 
 	if total_in < total_out {
@@ -955,28 +971,33 @@ func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	}
 
 	deletion_fail := delete_inputs(stub, inputs)
-	if !deletion_fail {
-		return "", fmt.Errorf("Error deleting inputs in ledeger")
+	if deletion_fail != nil {
+		return "", fmt.Errorf("Error deleting inputs in ledeger : %s", deletion_fail)
 	}
 
 	keys, fail := get_keys_for_owners(stub, outputs, inputs)
-	if !fail {
-		//TODO
+	if fail != nil {
+
+		return "", fmt.Errorf("Error: %s", fail)
 	}
 	fmt.Printf("%+v", keys)
 
 	txid := stub.GetTxID()
 	write_fail := set_outputs(stub, txid, outputs, inputs, &keys)
-	if !write_fail {
+	if write_fail != nil {
 		return "", fmt.Errorf("Error writing new tokens, possible token destruction happened /!\\ ")
 	}
 
 	fmt.Printf("%+v", keys)
 
-	delete_old_keys(&keys, inputs)
-	//TODO : handle error
-	commit_updated_keys(stub, keys)
-	//TODO : handle error
+	fail = delete_old_keys(&keys, inputs)
+	if fail != nil {
+		return "", fmt.Errorf("Error: %s", fail)
+	}
+	fail = commit_updated_keys(stub, keys)
+	if fail != nil {
+		return "", fmt.Errorf("Error: %s", fail)
+	}
 
 	return string(ret), nil
 }
