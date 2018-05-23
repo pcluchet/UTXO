@@ -528,7 +528,11 @@ func mint(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 		fmt.Println("Error decoding outputs")
 		return "", fmt.Errorf("Error in outputs : %s", set_outputs_fail)
 	}
-	commit_updated_keys(stub, keys)
+	err := commit_updated_keys(stub, keys)
+	if err != nil {
+		return "", fmt.Errorf("Err : %s", err)
+	}
+
 	return string(ret), nil
 }
 
@@ -781,26 +785,32 @@ func indexOfString(list []string, st string) int {
 func updateUserList(stub shim.ChaincodeStubInterface, keylist []UserUnspents) error {
 
 	//generating user list as array of strings
+	fmt.Println("USERLIST UPDATE")
 	var usersList []string
 	var usersListInLedger []string
 	for _, usr := range keylist {
 		usersList = append(usersList, usr.User)
 	}
 
+	fmt.Println("USERLIST : ", usersList)
+
 	value, err := stub.GetState("UserList")
 	if err != nil {
+
+		fmt.Println("la ")
 		return fmt.Errorf("Error : %s", err)
 	}
 
-	if value == nil {
-		return fmt.Errorf("Error : empty asset")
+	if value != nil {
+		b := bytes.NewReader(value)
+		err = json.NewDecoder(b).Decode(&usersListInLedger)
+		if err != nil {
+			return fmt.Errorf("Error : %s", err)
+		}
+
 	}
 
-	b := bytes.NewReader(value)
-	err = json.NewDecoder(b).Decode(&usersListInLedger)
-	if err != nil {
-		return fmt.Errorf("Error : %s", err)
-	}
+	fmt.Println("USERLIST UPDATE VALUE = ", string(value))
 
 	for _, usr := range usersList {
 		if indexOfString(usersListInLedger, usr) == -1 {
@@ -844,7 +854,7 @@ func commit_updated_keys(stub shim.ChaincodeStubInterface, keylist []UserUnspent
 
 	err := updateUserList(stub, keylist)
 	if err != nil {
-		fmt.Errorf("Errc : %s", err)
+		return fmt.Errorf("Errc : %s", err)
 	}
 
 	return nil
