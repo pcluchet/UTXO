@@ -6,11 +6,15 @@ package main
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"math"
 	"strconv"
 
+	"github.com/hyperledger/fabric/core/chaincode/lib/cid"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/peer"
 )
@@ -101,7 +105,6 @@ func (t *SimpleAsset) Init(stub shim.ChaincodeStubInterface) peer.Response {
 // method may create a new asset by specifying a new key-value pair.
 func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	// Extract the function and args from the transaction proposal
-	fmt.Println("OK")
 	fn, args := stub.GetFunctionAndParameters()
 
 	fmt.Printf("Invoque Request\n")
@@ -330,7 +333,7 @@ func UnspentTxForUser(stub shim.ChaincodeStubInterface, user string) (Inputs, er
 		return unspents, fmt.Errorf("Error %s", err)
 	}
 	if value == nil {
-		return unspents, fmt.Errorf("cannot get tx for user %s", user)
+		return nil, nil
 	}
 	b := bytes.NewReader([]byte(value))
 	err0 := json.NewDecoder(b).Decode(&unspents)
@@ -377,6 +380,9 @@ func AddUnspentsToOutputs(stub shim.ChaincodeStubInterface, outputs Outputs) (Ou
 
 			fmt.Println("Error getting")
 			return outputs, inputs_to_add, fmt.Errorf("Error : %s", err)
+		}
+		if raw == nil {
+			return outputs, inputs_to_add, fmt.Errorf("Error : cant retreive transaction", err)
 		}
 
 		b := bytes.NewReader(raw)
@@ -427,7 +433,7 @@ func set_outputs(stub shim.ChaincodeStubInterface, txid string, outputs Outputs,
 
 	outputs, failure = regroup_outputs(outputs)
 	if failure != nil {
-		return fmt.Errorf("Error : %s", failure)
+		return fmt.Errorf("Errora : %s", failure)
 	}
 
 	fmt.Println("Between")
@@ -436,22 +442,22 @@ func set_outputs(stub shim.ChaincodeStubInterface, txid string, outputs Outputs,
 	var inputs_to_add Inputs
 	outputs, inputs_to_add, failure = AddUnspentsToOutputs(stub, outputs)
 	if failure != nil {
-		return fmt.Errorf("Error : %s", failure)
+		return fmt.Errorf("Errorb : %s", failure)
 	}
 
 	failureOut, _ := check_outputs(outputs, outputs[0].Label)
 	if failureOut != nil {
-		return fmt.Errorf("Error : %s", failureOut)
+		return fmt.Errorf("Errorc : %s", failureOut)
 	}
 
 	fmt.Println(inputs_to_add)
 	failure = delete_inputs(stub, inputs_to_add)
 	if failure != nil {
-		return fmt.Errorf("Error : %s", failure)
+		return fmt.Errorf("Errord : %s", failure)
 	}
 	failure = delete_old_keys(kl, inputs_to_add)
 	if failure != nil {
-		return fmt.Errorf("Error : %s", failure)
+		return fmt.Errorf("Errore : %s", failure)
 	}
 
 	fmt.Println("After")
@@ -688,22 +694,24 @@ func delete_old_keys(keylist *([]UserUnspents), inputs Inputs) error {
 
 	for key, usr := range *keylist {
 		var ownerUnspents Inputs
-		b := bytes.NewReader(usr.Unspents)
-		err := json.NewDecoder(b).Decode(&ownerUnspents)
-		if err != nil {
-			return fmt.Errorf("Error : %s", err)
-		}
-		//deleting old coin
-		//ownerUnspents = append(ownerUnspents, input)
-		for k, value := range ownerUnspents {
-			for _, ip := range inputs {
-				if value.Txid == ip.Txid && value.J == ip.J {
+		if usr.Unspents != nil {
+			b := bytes.NewReader(usr.Unspents)
+			err := json.NewDecoder(b).Decode(&ownerUnspents)
+			if err != nil {
+				return fmt.Errorf("Error : %s", err)
+			}
+			//deleting old coin
+			//ownerUnspents = append(ownerUnspents, input)
+			for k, value := range ownerUnspents {
+				for _, ip := range inputs {
+					if value.Txid == ip.Txid && value.J == ip.J {
 
-					fmt.Println("LEN : %d k = %d", len(ownerUnspents), k)
-					if len(ownerUnspents) > k {
-						ownerUnspents = append(ownerUnspents[:k], ownerUnspents[k+1:]...)
-					} else {
-						ownerUnspents = ownerUnspents[:k]
+						fmt.Println("LEN : %d k = %d", len(ownerUnspents), k)
+						if len(ownerUnspents) > k {
+							ownerUnspents = append(ownerUnspents[:k], ownerUnspents[k+1:]...)
+						} else {
+							ownerUnspents = ownerUnspents[:k]
+						}
 					}
 				}
 			}
@@ -712,7 +720,7 @@ func delete_old_keys(keylist *([]UserUnspents), inputs Inputs) error {
 		//reconverting his coin list in bytes
 		rejson, err := json.Marshal(ownerUnspents)
 		if err != nil {
-			return fmt.Errorf("Error : %s", err)
+			return fmt.Errorf("Error_reparse : %s", err)
 		}
 		//rewrting his coin list
 		(*keylist)[key].Unspents = rejson
@@ -817,7 +825,7 @@ func commit_updated_keys(stub shim.ChaincodeStubInterface, keylist []UserUnspent
 		b := bytes.NewReader(usr.Unspents)
 		err := json.NewDecoder(b).Decode(&coinlist)
 		if err != nil {
-			fmt.Errorf("Err : %s", err)
+			fmt.Errorf("Err commiting : %s", err)
 		}
 		for _, coin := range coinlist {
 			fmt.Println("txid = %s, id : %d", coin.Txid, coin.J)
@@ -825,13 +833,13 @@ func commit_updated_keys(stub shim.ChaincodeStubInterface, keylist []UserUnspent
 
 		err = stub.PutState(usr.User, usr.Unspents)
 		if err != nil {
-			fmt.Errorf("Err : %s", err)
+			fmt.Errorf("Errc : %s", err)
 		}
 	}
 
 	err := updateUserList(stub, keylist)
 	if err != nil {
-		fmt.Errorf("Err : %s", err)
+		fmt.Errorf("Errc : %s", err)
 	}
 
 	return nil
@@ -869,7 +877,7 @@ func get_keys_for_owners(stub shim.ChaincodeStubInterface, outputs Outputs, inpu
 		if !user_already_in_list(current_user, UsersToUpdate) {
 			current_user.Unspents, err = stub.GetState(output.Owner)
 			if err != nil {
-				return UsersToUpdate, fmt.Errorf("Err : %s", err)
+				return UsersToUpdate, fmt.Errorf("Errgk : %s", err)
 			}
 
 			UsersToUpdate = append(UsersToUpdate, current_user)
@@ -884,7 +892,7 @@ func get_keys_for_owners(stub shim.ChaincodeStubInterface, outputs Outputs, inpu
 			fmt.Println("Retreiving key is :%s", retreiving_key)
 			tran, err = stub.GetState(retreiving_key)
 			if err != nil {
-				return UsersToUpdate, fmt.Errorf("Err : %s", err)
+				return UsersToUpdate, fmt.Errorf("Errgk : %s", err)
 			}
 			if tran == nil {
 				return UsersToUpdate, fmt.Errorf("Err : failed to retreive transaction")
@@ -894,7 +902,7 @@ func get_keys_for_owners(stub shim.ChaincodeStubInterface, outputs Outputs, inpu
 
 			ret := decode_single_transaction(string(tran), &output)
 			if ret != nil {
-				return UsersToUpdate, fmt.Errorf("Err : %s", ret)
+				return UsersToUpdate, fmt.Errorf("Errgk : %s", ret)
 			}
 			current_user.User = output.Owner
 			if !user_already_in_list(current_user, UsersToUpdate) {
@@ -914,17 +922,39 @@ func get_keys_for_owners(stub shim.ChaincodeStubInterface, outputs Outputs, inpu
 		fmt.Println("key = %d, user : %s", key, usr.User)
 
 		var coinlist Inputs
-		b := bytes.NewReader(usr.Unspents)
-		err := json.NewDecoder(b).Decode(&coinlist)
-		if err != nil {
-			return UsersToUpdate, fmt.Errorf("Err : %s", err)
-		}
-		for _, coin := range coinlist {
-			fmt.Println("txid = %s, id : %d", coin.Txid, coin.J)
+
+		if usr.Unspents != nil {
+			b := bytes.NewReader(usr.Unspents)
+			err := json.NewDecoder(b).Decode(&coinlist)
+
+			if err != nil {
+				return UsersToUpdate, fmt.Errorf("Errgki : %s", err)
+			}
+			for _, coin := range coinlist {
+				fmt.Println("txid = %s, id : %d", coin.Txid, coin.J)
+			}
 		}
 	}
 
 	return UsersToUpdate, nil
+}
+
+func pem_encode_pubkey(publicKey *ecdsa.PublicKey) string {
+	x509EncodedPub, _ := x509.MarshalPKIXPublicKey(publicKey)
+	pemEncodedPub := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: x509EncodedPub})
+	return string(pemEncodedPub)
+}
+
+func getPemPublicKeyOfCreator(stub shim.ChaincodeStubInterface) (string, error) {
+
+	cert, err := cid.GetX509Certificate(stub)
+	if err != nil {
+		return "", fmt.Errorf("Error : %s", err)
+	}
+	ecPublicKey := cert.PublicKey.(*ecdsa.PublicKey)
+	//fmt.Println(ecPublicKey)
+	//fmt.Printf("PUB : %x\n", ecdPublicKey)
+	return pem_encode_pubkey(ecPublicKey), nil
 }
 
 // This function takes inputs in arg[0] and outputs in arg[1],
@@ -933,6 +963,13 @@ func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	//TODO:
 	//[ ] args[2] sign
 	//[x] check amount of params
+
+	/*
+		spender, er := getPemPublicKeyOfCreator(stub)
+		if er != nil {
+			return "", fmt.Errorf("Cannot get creator of the transaction : %s", er)
+		}
+	*/
 
 	if len(args) != 3 {
 		return "", fmt.Errorf("Incorrect amount of arguments. Expecting 3")
@@ -948,7 +985,7 @@ func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	if decode_inputs_fail != nil {
 		return "", fmt.Errorf("Error decoding inputs : %s", decode_inputs_fail)
 	}
-	check_in_fail, total_in, label := check_inputs(stub, inputs, args[2])
+	check_in_fail, total_in, label := check_inputs(stub, inputs, args[2]) // spender)
 	if check_in_fail != nil {
 		return "", fmt.Errorf("Error checking inputs : %s", check_in_fail)
 	}
