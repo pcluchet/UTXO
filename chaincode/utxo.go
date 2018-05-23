@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/hyperledger/fabric/core/chaincode/lib/cid"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -244,11 +245,12 @@ func gethistory(stub shim.ChaincodeStubInterface, args []string) (string, error)
 func decode_io(arg string, adress interface{}) error {
 
 	b := bytes.NewReader([]byte(arg))
+	fmt.Printf("arg = %s\n", arg)
 
 	err := json.NewDecoder(b).Decode(adress)
 
 	if err != nil {
-		return fmt.Errorf("Error %s", err)
+		return fmt.Errorf("Errori %s", err)
 	}
 
 	if adress == nil {
@@ -345,14 +347,17 @@ func UnspentTxForUser(stub shim.ChaincodeStubInterface, user string) (Inputs, er
 }
 
 // this function returns the list of every unspent transaction owned by the users un an output list
-func UnspentTxForUsersInOuputs(stub shim.ChaincodeStubInterface, outputs Outputs) (Inputs, error) {
+// minus the user identified by the string spender
+func UnspentTxForUsersInOuputs(stub shim.ChaincodeStubInterface, outputs Outputs, spender string) (Inputs, error) {
 	var ret Inputs
 	for _, otp := range outputs {
-		more, failure := UnspentTxForUser(stub, otp.Owner)
-		if failure != nil {
-			return ret, fmt.Errorf("Error %s", failure)
+		if otp.Owner != spender {
+			more, failure := UnspentTxForUser(stub, otp.Owner)
+			if failure != nil {
+				return ret, fmt.Errorf("Error %s", failure)
+			}
+			ret = append(ret, more...)
 		}
-		ret = append(ret, more...)
 	}
 	return ret, nil
 }
@@ -360,11 +365,11 @@ func UnspentTxForUsersInOuputs(stub shim.ChaincodeStubInterface, outputs Outputs
 // this function add the amount of the last unspent transaction for a user to
 // the output list for each user, it returns a updated output list,
 // and the inputs that have been used (which will need to be deleted in order to avoid double spending)
-func AddUnspentsToOutputs(stub shim.ChaincodeStubInterface, outputs Outputs) (Outputs, Inputs, error) {
+func AddUnspentsToOutputs(stub shim.ChaincodeStubInterface, outputs Outputs, spender string) (Outputs, Inputs, error) {
 
 	var unspent_value Output
 	var inputs_to_add Inputs
-	unspents, fail := UnspentTxForUsersInOuputs(stub, outputs)
+	unspents, fail := UnspentTxForUsersInOuputs(stub, outputs, spender)
 	if fail != nil {
 		return outputs, inputs_to_add, fmt.Errorf("Error : %s", fail)
 	}
@@ -421,7 +426,7 @@ func AddUnspentsToOutputs(stub shim.ChaincodeStubInterface, outputs Outputs) (Ou
 // it makes sure users does not have multiple unspents transactions.
 // it also maintain a local copy of each unspent transaction for
 // users concerned by the transaction (kl)
-func set_outputs(stub shim.ChaincodeStubInterface, txid string, outputs Outputs, inputs Inputs, kl *([]UserUnspents)) error {
+func set_outputs(stub shim.ChaincodeStubInterface, txid string, outputs Outputs, inputs Inputs, kl *([]UserUnspents), spender string) error {
 
 	var i int
 	var new_input Input
@@ -440,7 +445,7 @@ func set_outputs(stub shim.ChaincodeStubInterface, txid string, outputs Outputs,
 	fmt.Println(outputs)
 
 	var inputs_to_add Inputs
-	outputs, inputs_to_add, failure = AddUnspentsToOutputs(stub, outputs)
+	outputs, inputs_to_add, failure = AddUnspentsToOutputs(stub, outputs, spender)
 	if failure != nil {
 		return fmt.Errorf("Errorb : %s", failure)
 	}
@@ -518,7 +523,7 @@ func mint(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 
 	txid := stub.GetTxID()
 	fmt.Println("Minting with txid=", txid)
-	set_outputs_fail := set_outputs(stub, txid, outputs, nil, &keys)
+	set_outputs_fail := set_outputs(stub, txid, outputs, nil, &keys, "")
 	if set_outputs_fail != nil {
 		fmt.Println("Error decoding outputs")
 		return "", fmt.Errorf("Error in outputs : %s", set_outputs_fail)
@@ -957,6 +962,13 @@ func getPemPublicKeyOfCreator(stub shim.ChaincodeStubInterface) (string, error) 
 	return pem_encode_pubkey(ecPublicKey), nil
 }
 
+func trimPemPubKey(key string) string {
+	key = strings.Replace(key, "\n", "", -1)
+	key = strings.Replace(key, "-----BEGIN PUBLIC KEY-----", "", -1)
+	key = strings.Replace(key, "-----END PUBLIC KEY-----", "", -1)
+	return key
+}
+
 // This function takes inputs in arg[0] and outputs in arg[1],
 // and performs the transaction the UTXO way
 func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
@@ -964,12 +976,12 @@ func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	//[ ] args[2] sign
 	//[x] check amount of params
 
-	/*
-		spender, er := getPemPublicKeyOfCreator(stub)
-		if er != nil {
-			return "", fmt.Errorf("Cannot get creator of the transaction : %s", er)
-		}
-	*/
+	spender, er := getPemPublicKeyOfCreator(stub)
+	if er != nil {
+		return "", fmt.Errorf("Cannot get creator of the transaction : %s", er)
+	}
+	spender = trimPemPubKey(spender)
+	fmt.Printf("spender : %s \n", spender)
 
 	if len(args) != 3 {
 		return "", fmt.Errorf("Incorrect amount of arguments. Expecting 3")
@@ -985,7 +997,7 @@ func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	if decode_inputs_fail != nil {
 		return "", fmt.Errorf("Error decoding inputs : %s", decode_inputs_fail)
 	}
-	check_in_fail, total_in, label := check_inputs(stub, inputs, args[2]) // spender)
+	check_in_fail, total_in, label := check_inputs(stub, inputs, spender)
 	if check_in_fail != nil {
 		return "", fmt.Errorf("Error checking inputs : %s", check_in_fail)
 	}
@@ -1021,7 +1033,7 @@ func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	fmt.Printf("%+v", keys)
 
 	txid := stub.GetTxID()
-	write_fail := set_outputs(stub, txid, outputs, inputs, &keys)
+	write_fail := set_outputs(stub, txid, outputs, inputs, &keys, spender)
 	if write_fail != nil {
 		return "", fmt.Errorf("Error writing new tokens, possible token destruction happened /!\\ ")
 	}
