@@ -101,6 +101,7 @@ func (t *SimpleAsset) Init(stub shim.ChaincodeStubInterface) peer.Response {
 // method may create a new asset by specifying a new key-value pair.
 func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
 	// Extract the function and args from the transaction proposal
+	fmt.Println("OK")
 	fn, args := stub.GetFunctionAndParameters()
 
 	fmt.Printf("Invoque Request\n")
