@@ -28,7 +28,15 @@
 
 # prepending $PWD/../bin to PATH to ensure we are picking up the correct binaries
 # this may be commented out to resolve installed version of tools if desired
-export PATH=${PWD}/../bin:${PWD}:$PATH
+os=$(uname)
+if [[ ${os} == Linux ]]; then
+	export PATH=${PWD}/../bin_linux:${PWD}:$PATH
+elif [[ ${os} == Darwin ]]; then
+	export PATH=${PWD}/../bin_macos:${PWD}:$PATH
+else
+	printf "Your kernel name must be \"Linux\" or \"Darwin\".\n"
+	exit 1
+fi
 export FABRIC_CFG_PATH=${PWD}
 
 # Print the usage message

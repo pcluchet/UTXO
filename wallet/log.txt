@@ -1,10 +1,44 @@
-[36m2018-05-23 14:00:23.660 UTC [msp] GetLocalMSP -> DEBU 001[0m Returning existing local MSP
-[36m2018-05-23 14:00:23.660 UTC [msp] GetDefaultSigningIdentity -> DEBU 002[0m Obtaining default signing identity
-2018-05-23 14:00:23.667 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 003[0m Using default escc
-2018-05-23 14:00:23.668 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 004[0m Using default vscc
-[36m2018-05-23 14:00:23.669 UTC [chaincodeCmd] getChaincodeSpec -> DEBU 005[0m java chaincode disabled
-[36m2018-05-23 14:00:23.670 UTC [msp/identity] Sign -> DEBU 006[0m Sign: plaintext: 0ABF070A6708031A0C08F7E795D80510...535010030A04657363630A0476736363 
-[36m2018-05-23 14:00:23.670 UTC [msp/identity] Sign -> DEBU 007[0m Sign: digest: 8FE0D247150BD9A5CE33619058870C89A5C12A8D07A3433954A0F613CF84BE13 
-[36m2018-05-23 14:00:41.231 UTC [msp/identity] Sign -> DEBU 008[0m Sign: plaintext: 0ABF070A6708031A0C08F7E795D80510...03FF63CCB036B494B6D1C55A1A009D7E 
-[36m2018-05-23 14:00:41.231 UTC [msp/identity] Sign -> DEBU 009[0m Sign: digest: F2AF6956A6E54E85421DE727B652B125F669938E7F2D6BB296CB0240A2E1329E 
-2018-05-23 14:00:41.233 UTC [main] main -> INFO 00a[0m Exiting.....
+[36m2018-05-24 15:38:40.448 UTC [msp] GetLocalMSP -> DEBU 001[0m Returning existing local MSP
+[36m2018-05-24 15:38:40.448 UTC [msp] GetDefaultSigningIdentity -> DEBU 002[0m Obtaining default signing identity
+2018-05-24 15:38:40.448 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 003[0m Using default escc
+2018-05-24 15:38:40.448 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 004[0m Using default vscc
+[36m2018-05-24 15:38:40.448 UTC [chaincodeCmd] getChaincodeSpec -> DEBU 005[0m java chaincode disabled
+[36m2018-05-24 15:38:40.467 UTC [golang-platform] getCodeFromFS -> DEBU 006[0m getCodeFromFS github.com/chaincode/
+[36m2018-05-24 15:38:40.552 UTC [golang-platform] func1 -> DEBU 007[0m Discarding GOROOT package bytes
+[36m2018-05-24 15:38:40.552 UTC [golang-platform] func1 -> DEBU 008[0m Discarding GOROOT package crypto/ecdsa
+[36m2018-05-24 15:38:40.552 UTC [golang-platform] func1 -> DEBU 009[0m Discarding GOROOT package crypto/x509
+[36m2018-05-24 15:38:40.552 UTC [golang-platform] func1 -> DEBU 00a[0m Discarding GOROOT package encoding/json
+[36m2018-05-24 15:38:40.552 UTC [golang-platform] func1 -> DEBU 00b[0m Discarding GOROOT package encoding/pem
+[36m2018-05-24 15:38:40.552 UTC [golang-platform] func1 -> DEBU 00c[0m Discarding GOROOT package fmt
+[36m2018-05-24 15:38:40.552 UTC [golang-platform] func1 -> DEBU 00d[0m Accepting import: github.com/hyperledger/fabric/core/chaincode/lib/cid
+[36m2018-05-24 15:38:40.552 UTC [golang-platform] func1 -> DEBU 00e[0m Discarding provided package github.com/hyperledger/fabric/core/chaincode/shim
+[36m2018-05-24 15:38:40.552 UTC [golang-platform] func1 -> DEBU 00f[0m Discarding provided package github.com/hyperledger/fabric/protos/peer
+[36m2018-05-24 15:38:40.552 UTC [golang-platform] func1 -> DEBU 010[0m Discarding GOROOT package math
+[36m2018-05-24 15:38:40.552 UTC [golang-platform] func1 -> DEBU 011[0m Discarding GOROOT package strconv
+[36m2018-05-24 15:38:40.552 UTC [golang-platform] func1 -> DEBU 012[0m Discarding GOROOT package strings
+Error: Error getting chaincode code chaincode: Error getting chaincode package bytes: Error obtaining dependencies for github.com/hyperledger/fabric/core/chaincode/lib/cid: <go, [list -f {{ join .Deps "\n"}} github.com/hyperledger/fabric/core/chaincode/lib/cid]>: failed with error: "exit status 1"
+can't load package: package github.com/hyperledger/fabric/core/chaincode/lib/cid: cannot find package "github.com/hyperledger/fabric/core/chaincode/lib/cid" in any of:
+	/opt/go/src/github.com/hyperledger/fabric/core/chaincode/lib/cid (from $GOROOT)
+	/opt/gopath/src/github.com/hyperledger/fabric/core/chaincode/lib/cid (from $GOPATH)
+
+Usage:
+  peer chaincode install [flags]
+
+Flags:
+  -c, --ctor string      Constructor message for the chaincode in JSON format (default "{}")
+  -l, --lang string      Language the chaincode is written in (default "golang")
+  -n, --name string      Name of the chaincode
+  -p, --path string      Path to chaincode
+  -v, --version string   Version of the chaincode specified in install/instantiate/upgrade commands
+
+Global Flags:
+      --cafile string                       Path to file containing PEM-encoded trusted certificate(s) for the ordering endpoint
+      --certfile string                     Path to file containing PEM-encoded X509 public key to use for mutual TLS communication with the orderer endpoint
+      --clientauth                          Use mutual TLS when communicating with the orderer endpoint
+      --keyfile string                      Path to file containing PEM-encoded private key to use for mutual TLS communication with the orderer endpoint
+      --logging-level string                Default logging level and overrides, see core.yaml for full syntax
+  -o, --orderer string                      Ordering service endpoint
+      --ordererTLSHostnameOverride string   The hostname override to use when validating the TLS connection to the orderer.
+      --tls                                 Use TLS when communicating with the orderer endpoint
+      --transient string                    Transient map of arguments in JSON encoding
+
