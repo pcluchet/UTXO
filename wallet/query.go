@@ -57,10 +57,12 @@ func	queryBalance(tx []Transaction) ([]Balance, error) {
 	for _, value := range tx {
 		cmd = getQueryCommand(fmt.Sprintf("%s_%d", value.Txid, value.J))
 		if stdout, err = exec.Command("/bin/sh", "-c", cmd).CombinedOutput(); err != nil {
+			fmt.Println(err)
 			return nil, err
 		}
 		ret = parseStdout(string(stdout))
 		if err = json.Unmarshal([]byte(ret), &buf); err != nil {
+			fmt.Println(err)
 			return nil, err
 		}
 		balance = append(balance, buf)

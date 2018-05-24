@@ -1,6 +1,5 @@
 package main
 
-import "strconv"
 import "strings"
 import "fmt"
 
@@ -12,6 +11,18 @@ func	usage() {
 	fmt.Println("Usage:\t\t./wallet")
 	fmt.Println("Balance:\t./wallet balance")
 	fmt.Println("Spend:\t\t./wallet spend [Amount] [Owner] [Label]")
+}
+
+func	parseStdout(stdout string) string {
+	var index	int
+	
+	index = strings.Index(stdout, "payload:")
+	stdout = stdout[index + len("payload:\""):]
+	stdout = strings.Split(stdout, "\n")[0]
+	stdout = stdout[:(len(stdout) - 2)]
+	stdout = strings.Replace(stdout, "\\", "", -1)
+
+	return stdout
 }
 
 func	checkFund(tx []Transaction, balance []Balance, argv []string) (Transaction, error) {
@@ -30,17 +41,5 @@ func	checkFund(tx []Transaction, balance []Balance, argv []string) (Transaction,
 	}
 	
 	return ret, err 
-}
-
-func	parseStdout(stdout string) string {
-	var index	int
-	
-	index = strings.Index(stdout, "payload:")
-	stdout = stdout[index + len("payload:\""):]
-	stdout = strings.Split(stdout, "\n")[0]
-	stdout = stdout[:(len(stdout) - 2)]
-	stdout = strings.Replace(stdout, "\\", "", -1)
-
-	return stdout
 }
 

@@ -24,7 +24,7 @@ func	balance(publicKey string, argv []string) {
 		fmt.Printf("Balance account = 0\n")
 	}
 	for _, value := range balance {
-		fmt.Printf("Balance account = [%s] [%.2f]\n", value.Label, value.Amount)
+		fmt.Printf("Balance account = [%s] [%f]\n", value.Label, value.Amount)
 	}
 }
 

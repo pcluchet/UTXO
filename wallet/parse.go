@@ -13,13 +13,11 @@ func	parseAmount(amount string) {
 	var err	error
 
 	if dec, err = strconv.ParseFloat(amount, 64); err != nil {
-		fmt.Println("ParseError = Ammount cannot be a string\n")
-		usage()
+		fmt.Println("ParseError = Ammount cannot be a string")
 		os.Exit(1)
 	}
 	if dec <= 0 {
-		fmt.Println("ParseError = Amount cannot be less or equal to 0\n")
-		usage()
+		fmt.Println("ParseError = Amount cannot be less or equal to 0")
 		os.Exit(1)
 	}
 }
