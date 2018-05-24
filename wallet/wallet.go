@@ -17,10 +17,14 @@ func	balance(publicKey string, argv []string) {
 		return
 	}
 	if balance, err = queryBalance(tx); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return
 	}
+	if balance == nil {
+		fmt.Printf("Balance account = 0\n")
+	}
 	for _, value := range balance {
-		fmt.Printf("Balance account for [%s] = %.2f %s\n", value.Owner, value.Amount, value.Label)
+		fmt.Printf("Balance account = [%s] [%.2f]\n", value.Label, value.Amount)
 	}
 }
 
