@@ -2,7 +2,6 @@ package main
 
 import "fmt"
 import "os/exec"
-import "strconv"
 
 /* ************************************************************************** */
 /*		PRIVATE																  */
@@ -25,7 +24,7 @@ func	makeTransaction(tx []Transaction, balance []Balance, argv []string) error {
 		return fmt.Errorf("Insufficent fund for this transaction")
 	}
 	fmt.Println(input)
-	return
+	return nil
 	cmd = getInvokeCommand(input, argv)
 	if _, err = exec.Command("/bin/sh", "-c", cmd).CombinedOutput(); err != nil {
 		return err
