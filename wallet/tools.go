@@ -26,8 +26,9 @@ func	parseStdout(stdout string) string {
 	return stdout
 }
 
-func	checkFund(tx []Transaction, balance []Balance, argv []string) (Transaction, error) {
+func	checkFund(tx []Transaction, balance []Balance, argv []string) (Transaction, Balance, error) {
 	var ret	Transaction
+	var val Balance
 	var dec	float64
 	var err	error
 
@@ -37,10 +38,11 @@ func	checkFund(tx []Transaction, balance []Balance, argv []string) (Transaction,
 	for index, value := range balance {
 		if value.Label == argv[3] && dec <= value.Amount {
 			ret = tx[index]
+			val = value
 			err = nil
 		}
 	}
 	
-	return ret, err 
+	return ret, val, err 
 }
 

@@ -58,7 +58,6 @@ func	main() {
 
 	argv = os.Args
 	publicKey = getPublicKey()
-	fmt.Println(publicKey, "\n")
 	
 	switch len(argv) {
 		case 2:

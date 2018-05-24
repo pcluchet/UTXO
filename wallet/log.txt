@@ -1,3 +1,0 @@
-2018-05-24 16:04:26.939 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 001[0m Using default escc
-2018-05-24 16:04:26.939 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 002[0m Using default vscc
-2018-05-24 16:04:44.236 UTC [main] main -> INFO 003[0m Exiting.....
