@@ -19,9 +19,12 @@ function	usage()
 			printf "usage: balance\n"
 			;;
 		spend)
-			printf "usage: spend AMOUNT LABEL NEW_OWNER\n"
+			printf "usage: spend AMOUNT OWNER LABEL\n"
 			;;
 		*)
+			printf "usage mode [ARGUMENTS]\n"
+			printf "  - balance: balance\n"
+			printf "  - spend:   spend AMOUNT OWNER LABEL\n"
 			;;
 	esac
 }
@@ -32,27 +35,28 @@ function	ope_balance()
 		printf "balance does not require any argument.\n"
 		usage balance; return
 	fi
-	printf "balance %s\n" ${1}
+	./peer balance
 }
 
 function	ope_spend()
 {
-	if [[ ${#} -lt 3 ]]; then
-		printf "spend requires tree arguments.\n"
-		usage spend ; return
-	elif [[ ${#} -gt 3 ]]; then
+	amount=$1
+	owner=$2
+	label=$3
+
+	if [[ ${#} -gt 3 ]]; then
 		printf "spend requires only tree arguments.\n"
 		usage spend ; return
 	fi
-	printf "spend %s %s %s\n" "${1}" "${2}" "${3}"
+	while [[ -z ${amount} ]]; do read -e -p "spend-amount$ " amount; done
+	while [[ -z ${owner} ]]; do read -e -p "spend-owner$ " owner; done
+	while [[ -z ${label} ]]; do read -e -p "spend-label$ " label; done
+	./peer spend ${amount} ${owner} ${label}
 }
 
 function	get_input()
 {
-	### READ INPUT
-	#printf "${C_CYAN}%s${C_NO}\$ " "wsh"
 	read -e -p "wsh$ " -a argv
-	argc=${#argv[@]}
 	
 	case ${argv[0]} in
 		balance|spend)	ope_${argv[0]} ${argv[@]:1} ;;
