@@ -1,2 +1,4 @@
 network/crypto-config/*
 network/channel-artifacts/*
+wallet/log.txt
+wallet/mychannel.block
