@@ -994,7 +994,8 @@ func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	fmt.Printf("spender : %s \n", spender)
 
 	if len(args) != 3 {
-		return "", fmt.Errorf("Incorrect amount of arguments. Expecting 3")
+		fmt.Println(args)
+		return "", fmt.Errorf("Incorrect amount of arguments. Expecting 3, have = %d, %s", len(args), args)
 	}
 
 	fmt.Println("Spend transaction triggered")

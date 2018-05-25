@@ -253,6 +253,7 @@ function networkDown () {
     removeUnwantedImages
     # remove orderer block and other channel configuration transactions and certs
     rm -rf channel-artifacts/*.block channel-artifacts/*.tx crypto-config ./org3-artifacts/crypto-config/ channel-artifacts/org3.json
+	rm -rf ../wallet/channel-artifacts ../wallet/log.txt ../wallet/crypto ../wallet/mychannel.block ../wallet/scripts/
     # remove the docker-compose yaml file that was customized to the example
     rm -f docker-compose-e2e.yaml
   fi
