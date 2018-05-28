@@ -250,7 +250,7 @@ func decode_io(arg string, adress interface{}) error {
 	err := json.NewDecoder(b).Decode(adress)
 
 	if err != nil {
-		return fmt.Errorf("Errori %s", err)
+		return fmt.Errorf("Error %s", err)
 	}
 
 	if adress == nil {
@@ -591,8 +591,6 @@ func check_inputs(stub shim.ChaincodeStubInterface, inputs Inputs, who string) (
 
 	fmt.Println("Now checking inputs")
 
-	var i int
-	i = 0
 	total_amount = 0.0
 	for k, v := range inputs {
 		fmt.Println("Handling now : key[%s] value[%s]\n", k, v)
@@ -631,7 +629,7 @@ func check_inputs(stub shim.ChaincodeStubInterface, inputs Inputs, who string) (
 		}
 
 		//Check always same label (currency)
-		if i == 0 {
+		if label == "" {
 			label = output.Label
 		} else {
 			if output.Label != label {
@@ -646,9 +644,7 @@ func check_inputs(stub shim.ChaincodeStubInterface, inputs Inputs, who string) (
 		fmt.Println("amount =", amount)
 		amount = Round(amount*1e8) / 1e8
 		total_amount += amount
-
 		total_amount = Round(total_amount*1e8) / 1e8
-		i++
 	}
 
 	fmt.Println("Total amount of inputs : %f", total_amount)
@@ -986,17 +982,17 @@ func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	//[ ] args[2] sign
 	//[x] check amount of params
 
+	if len(args) != 3 {
+		fmt.Println(args)
+		return "", fmt.Errorf("Incorrect amount of arguments. Expecting 3, have = %d, %s", len(args), args)
+	}
+
 	spender, er := getPemPublicKeyOfCreator(stub)
 	if er != nil {
 		return "", fmt.Errorf("Cannot get creator of the transaction : %s", er)
 	}
 	spender = trimPemPubKey(spender)
 	fmt.Printf("spender : %s \n", spender)
-
-	if len(args) != 3 {
-		fmt.Println(args)
-		return "", fmt.Errorf("Incorrect amount of arguments. Expecting 3, have = %d, %s", len(args), args)
-	}
 
 	fmt.Println("Spend transaction triggered")
 
@@ -1033,7 +1029,7 @@ func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 
 	deletion_fail := delete_inputs(stub, inputs)
 	if deletion_fail != nil {
-		return "", fmt.Errorf("Error deleting inputs in ledeger : %s", deletion_fail)
+		return "", fmt.Errorf("Error deleting inputs in ledger : %s", deletion_fail)
 	}
 
 	keys, fail := get_keys_for_owners(stub, outputs, inputs)

@@ -56,13 +56,12 @@ function	ope_spend()
 
 function	get_input()
 {
-	read -e -p "wsh$ " -a argv
+	read -e -p "wsh:$(basename $(pwd))$ " -a argv
 	
 	case ${argv[0]} in
 		balance|spend)	ope_${argv[0]} ${argv[@]:1} ;;
 		exit|quit)		exit 0 ;;
-		"")				;;
-		*)				usage ;;
+		*)				${argv[@]} ;;
 	esac
 }
 
