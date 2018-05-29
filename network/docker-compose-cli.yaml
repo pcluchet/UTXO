@@ -8,6 +8,7 @@ version: '2'
 volumes:
   orderer.example.com:
   peer0.MEDSOS.example.com:
+  peer1.MEDSOS.example.com:
 
 networks:
   byfn:
@@ -27,6 +28,14 @@ services:
     extends:
       file:  base/docker-compose-base.yaml
       service: peer0.MEDSOS.example.com
+    networks:
+      - byfn
+
+  peer1.MEDSOS.example.com:
+    container_name: peer1.MEDSOS.example.com
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer1.MEDSOS.example.com
     networks:
       - byfn
 
@@ -61,6 +70,7 @@ services:
     depends_on:
       - orderer.example.com
       - peer0.MEDSOS.example.com
+      - peer1.MEDSOS.example.com
     networks:
       - byfn
 
@@ -95,5 +105,6 @@ services:
     depends_on:
       - orderer.example.com
       - peer0.MEDSOS.example.com
+      - peer1.MEDSOS.example.com
     networks:
       - byfn

@@ -30,8 +30,6 @@ echo "Channel name : "$CHANNEL_NAME
 . scripts/utils.sh
 
 createChannel() {
-	setGlobals 0 1
-
 	echo
 	echo "--------------------------------------------> $CORE_PEER_ADDRESS <--------------------------------------------------"
 	echo
@@ -54,21 +52,26 @@ createChannel() {
 }
 
 joinChannel () {
-	for peer in 0 ; do
-		joinChannelWithRetry $peer "MEDSOS"
-		echo "===================== peer${peer}.MEDSOS joined on the channel \"$CHANNEL_NAME\" ===================== "
-		sleep $DELAY
-		echo
+	for org in MEDSOS ; do
+		for peer in 0 1 ; do
+			joinChannelWithRetry $peer $org
+			echo "===================== peer${peer}.${org} joined on the channel \"$CHANNEL_NAME\" ===================== "
+			sleep $DELAY
+			echo
+		done
 	done
 }
 
 ## Create channel
 echo "Creating channel..."
+setGlobals 0 MEDSOS
 createChannel
 
 ## Join all the peers to the channel
 echo "Having all peers join the channel..."
 joinChannel
+
+exit 0
 
 ## Set the anchor peers for each org in the channel
 echo "Updating anchor peers for MEDSOS..."

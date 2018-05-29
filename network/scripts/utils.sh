@@ -27,11 +27,11 @@ setOrdererGlobals() {
 setGlobals () {
 	PEER=$1
 	ORG=$2
-	CORE_PEER_LOCALMSPID="MEDSOSMSP"
-	CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/MEDSOS.example.com/peers/peer0.MEDSOS.example.com/tls/ca.crt
-	CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/MEDSOS.example.com/users/Admin@MEDSOS.example.com/msp
-	CORE_PEER_ADDRESS=peer0.MEDSOS.example.com:7051
-	env |grep CORE
+	CORE_PEER_LOCALMSPID="${ORG}MSP"
+	CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/${ORG}.example.com/peers/peer${PEER}.${ORG}.example.com/tls/ca.crt
+	CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/${ORG}.example.com/users/Admin@${ORG}.example.com/msp
+	CORE_PEER_ADDRESS=peer${PEER}.${ORG}.example.com:7051
+	env | grep CORE
 }
 
 
