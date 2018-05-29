@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+C_RED="\033[31;01m"
+C_GREEN="\033[32;01m"
+C_YELLOW="\033[33;01m"
+C_BLUE="\033[34;01m"
+C_PINK="\033[35;01m"
+C_CYAN="\033[36;01m"
+C_NO="\033[0m"
+
+################################################################################
+### MAIN #######################################################################
+################################################################################
+
+amount=$1
+owner=$2
+label=$3
+
+if [[ ${#} -gt 3 ]]; then
+	printf "${C_RED}spend requires only tree arguments.\n"
+	printf "${C_YELLOW}usage: ${C_NO}spend AMOUNT OWNER LABEL\n"
+	printf "${C_PINK} AMOUNT:${C_NO} amount to spend.\n"
+	printf "${C_PINK} OWNER:${C_NO}	 receiver of transaction.\n"
+	printf "${C_PINK} LABEL:${C_NO}	 currency label.\n"
+	exit 1
+fi
+while [[ -z ${amount} ]]; do read -e -p "spend-[amount]$ " amount; done
+while [[ -z ${owner} ]]; do read -e -p "spend-[owner]$ " owner; done
+while [[ -z ${label} ]]; do read -e -p "spend-[label]$ " label; done
+./peer spend ${amount} ${owner} ${label}
