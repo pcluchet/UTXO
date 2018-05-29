@@ -56,7 +56,7 @@ function	ope_spend()
 
 function	get_input()
 {
-	read -e -p "wsh:$(basename $(pwd))$ " -a argv
+	read -e -p "wsh:$(dirs +0)$ " -a argv
 	
 	case ${argv[0]} in
 		balance|spend)	ope_${argv[0]} ${argv[@]:1} ;;

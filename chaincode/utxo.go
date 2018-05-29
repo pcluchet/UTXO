@@ -363,7 +363,7 @@ func UnspentTxForUsersInOuputs(stub shim.ChaincodeStubInterface, outputs Outputs
 }
 
 // this function add the amount of the last unspent transaction for a user to
-// the output list for each user, it returns a updated output list,
+// the output list for each user, it returns an updated output list,
 // and the inputs that have been used (which will need to be deleted in order to avoid double spending)
 func AddUnspentsToOutputs(stub shim.ChaincodeStubInterface, outputs Outputs, spender string) (Outputs, Inputs, error) {
 
@@ -664,8 +664,6 @@ func check_outputs(outputs Outputs, label string) (error, float64) {
 
 	fmt.Println("Now checking Outputs")
 
-	var i int
-	i = 0
 	total_amount = 0.0
 	for k, v := range outputs {
 		fmt.Println("Handling now : key[%s] value[%s]\n", k, v)
@@ -684,9 +682,7 @@ func check_outputs(outputs Outputs, label string) (error, float64) {
 		fmt.Println("amount =", amount)
 		amount = Round(amount*1e8) / 1e8
 		total_amount += amount
-
 		total_amount = Round(total_amount*1e8) / 1e8
-		i++
 	}
 
 	fmt.Println("Total amount of outputs : %f", total_amount)
