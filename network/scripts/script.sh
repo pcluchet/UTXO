@@ -9,14 +9,10 @@ echo "|____/    |_|   /_/   \_\ |_| \_\   |_|  "
 echo
 echo "Build your first network (BYFN) end-to-end test"
 echo
-CHANNEL_NAME="$1"
-DELAY="$2"
-LANGUAGE="$3"
-TIMEOUT="$4"
-: ${CHANNEL_NAME:="mychannel"}
-: ${DELAY:="3"}
-: ${LANGUAGE:="golang"}
-: ${TIMEOUT:="10"}
+DELAY="3"
+TIMEOUT="10"
+CHANNEL_NAME="ptwist"
+LANGUAGE="golang"
 LANGUAGE=`echo "$LANGUAGE" | tr [:upper:] [:lower:]`
 COUNTER=1
 MAX_RETRY=5
