@@ -32,22 +32,22 @@ services:
     ports:
       - 7050:7050
 
-  peer0.org1.example.com:
-    container_name: peer0.org1.example.com
+  peer0.MEDSOS.example.com:
+    container_name: peer0.MEDSOS.example.com
     extends:
       file: peer-base.yaml
       service: peer-base
     environment:
-      - CORE_PEER_ID=peer0.org1.example.com
-      - CORE_PEER_ADDRESS=peer0.org1.example.com:7051
-      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org1.example.com:7051
-      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org1.example.com:7051
-      - CORE_PEER_LOCALMSPID=Org1MSP
+      - CORE_PEER_ID=peer0.MEDSOS.example.com
+      - CORE_PEER_ADDRESS=peer0.MEDSOS.example.com:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.MEDSOS.example.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.MEDSOS.example.com:7051
+      - CORE_PEER_LOCALMSPID=MEDSOSMSP
     volumes:
         - /var/run/:/host/var/run/
-        - ../crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp:/etc/hyperledger/fabric/msp
-        - ../crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls:/etc/hyperledger/fabric/tls
-        - peer0.org1.example.com:/var/hyperledger/production
+        - ../crypto-config/peerOrganizations/MEDSOS.example.com/peers/peer0.MEDSOS.example.com/msp:/etc/hyperledger/fabric/msp
+        - ../crypto-config/peerOrganizations/MEDSOS.example.com/peers/peer0.MEDSOS.example.com/tls:/etc/hyperledger/fabric/tls
+        - peer0.MEDSOS.example.com:/var/hyperledger/production
     ports:
       - 7051:7051
       - 7053:7053
