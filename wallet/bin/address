@@ -17,4 +17,4 @@ if [[ ${#} -gt 0 ]]; then
 	printf "${C_YELLOW}usage: ${C_NO}%s\n" "address"
 	exit 1
 fi
-./peer address
+./wallet address

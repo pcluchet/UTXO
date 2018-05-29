@@ -18,10 +18,10 @@ func	getInvokeCommand(input Transaction, output Balance, argv []string) string {
 	sum = getSum(argv[1], output.Amount)
 
 	if sum[1] == 0 {
-		return fmt.Sprintf(`peer chaincode invoke -o orderer.example.com:7050 --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C ptwist -n Ptwist -c '{"Args":["spend", "[{\"txid\":\"%s\", \"j\":%d}]", "[{\"amount\":%s,\"owner\":\"%s\",\"label\":\"%s\"}]", "sigs"]}'`, input.Txid, input.J, argv[1], argv[2], argv[3])
+		return fmt.Sprintf(`peer chaincode invoke -o orderer.example.com:7050 --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C ptwist -n ptwist -c '{"Args":["spend", "[{\"txid\":\"%s\", \"j\":%d}]", "[{\"amount\":%s,\"owner\":\"%s\",\"label\":\"%s\"}]", "sigs"]}'`, input.Txid, input.J, argv[1], argv[2], argv[3])
 	}
 	
-	return fmt.Sprintf(`peer chaincode invoke -o orderer.example.com:7050 --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C ptwist -n Ptwist -c '{"Args":["spend", "[{\"txid\":\"%s\", \"j\":%d}]", "[{\"amount\":%s,\"owner\":\"%s\",\"label\":\"%s\"}, {\"amount\":%f,\"owner\":\"%s\",\"label\":\"%s\"}]]", "sigs"]}'`, input.Txid, input.J, argv[1], argv[2], argv[3], sum[1], output.Owner, output.Label)
+	return fmt.Sprintf(`peer chaincode invoke -o orderer.example.com:7050 --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C ptwist -n ptwist -c '{"Args":["spend", "[{\"txid\":\"%s\", \"j\":%d}]", "[{\"amount\":%s,\"owner\":\"%s\",\"label\":\"%s\"}, {\"amount\":%f,\"owner\":\"%s\",\"label\":\"%s\"}]]", "sigs"]}'`, input.Txid, input.J, argv[1], argv[2], argv[3], sum[1], output.Owner, output.Label)
 }
 
 func	getSum(amount string, fund float64) []float64 {
