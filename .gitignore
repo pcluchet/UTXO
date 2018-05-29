@@ -2,4 +2,5 @@ network/crypto-config/*
 network/channel-artifacts/*
 wallet/log.txt
 wallet/ptwist.block
+wallet/wallet
 network/docker-compose-e2e.yaml
