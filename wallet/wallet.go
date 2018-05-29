@@ -7,6 +7,10 @@ import "os"
 /*		PRIVATE																  */
 /* ************************************************************************** */
 
+func address(publicKey string) {
+	fmt.Printf("Public Key = %s 🗝\n", publicKey)
+}
+
 func balance(publicKey string, argv []string) {
 	var tx []Transaction
 	var balance []Balance
@@ -57,12 +61,22 @@ func main() {
 	var publicKey string
 
 	argv = os.Args
-	publicKey = getPublicKey()
+	if publicKey = getPublicKey(); publicKey == "" {
+		fmt.Fprintf(os.Stderr, "Network is down\n")
+		os.Exit(1)
+	}
 
 	switch len(argv) {
 	case 2:
-		parseArgv(argv[1], "balance")
-		balance(publicKey, argv[1:])
+		// Need to optimise this
+		switch argv[1] {
+		case "balance":
+			balance(publicKey, argv[1:])
+		case "address":
+			address(publicKey)
+		default:
+			parseArgv(argv[1], "default")
+		}
 	case 5:
 		parseSpend(publicKey, argv[1:])
 		spend(publicKey, argv[1:])
