@@ -71,8 +71,6 @@ createChannel
 echo "Having all peers join the channel..."
 joinChannel
 
-exit 0
-
 ## Set the anchor peers for each org in the channel
 echo "Updating anchor peers for MEDSOS..."
 updateAnchorPeers 0 "MEDSOS"

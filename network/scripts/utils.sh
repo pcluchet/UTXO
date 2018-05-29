@@ -91,8 +91,8 @@ installChaincode () {
 	res=$?
         set +x
 	cat log.txt
-	verifyResult $res "Chaincode installation on peer${PEER}.MEDSOS has Failed"
-	echo "===================== Chaincode is installed on peer${PEER}.MEDSOS ===================== "
+	verifyResult $res "Chaincode installation on peer${PEER}.${ORG} has Failed"
+	echo "===================== Chaincode is installed on peer${PEER}.${ORG} ===================== "
 	echo
 }
 
@@ -118,8 +118,8 @@ instantiateChaincode () {
                 set +x
 	fi
 	cat log.txt
-	verifyResult $res "Chaincode instantiation on peer${PEER}.MEDSOS on channel '$CHANNEL_NAME' failed"
-	echo "===================== Chaincode Instantiation on peer${PEER}.org${ORG} on channel '$CHANNEL_NAME' is successful ===================== "
+	verifyResult $res "Chaincode instantiation on peer${PEER}.${ORG} on channel '$CHANNEL_NAME' failed"
+	echo "===================== Chaincode Instantiation on peer${PEER}.${ORG} on channel '$CHANNEL_NAME' is successful ===================== "
 	echo
 }
 
