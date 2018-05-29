@@ -1,4 +1,5 @@
 network/crypto-config/*
 network/channel-artifacts/*
 wallet/log.txt
-wallet/mychannel.block
+wallet/ptwist.block
+network/docker-compose-e2e.yaml
