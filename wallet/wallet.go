@@ -7,11 +7,11 @@ import "os"
 /*		PRIVATE																  */
 /* ************************************************************************** */
 
-func	balance(publicKey string, argv []string) {
-	var tx			[]Transaction
-	var balance		[]Balance
-	var err			error
-	
+func balance(publicKey string, argv []string) {
+	var tx []Transaction
+	var balance []Balance
+	var err error
+
 	if tx, err = queryTransaction(publicKey); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		return
@@ -28,10 +28,10 @@ func	balance(publicKey string, argv []string) {
 	}
 }
 
-func	spend(publicKey string, argv []string) {
-	var tx		[]Transaction
-	var balance	[]Balance
-	var err		error
+func spend(publicKey string, argv []string) {
+	var tx []Transaction
+	var balance []Balance
+	var err error
 
 	if tx, err = queryTransaction(publicKey); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
@@ -52,21 +52,21 @@ func	spend(publicKey string, argv []string) {
 /*		PUBLIC																  */
 /* ************************************************************************** */
 
-func	main() {
-	var argv		[]string
-	var publicKey	string
+func main() {
+	var argv []string
+	var publicKey string
 
 	argv = os.Args
 	publicKey = getPublicKey()
-	
+
 	switch len(argv) {
-		case 2:
-			parseArgv(argv[1], "balance")
-			balance(publicKey, argv[1:])
-		case 5:
-			parseSpend(publicKey, argv[1:])
-			spend(publicKey, argv[1:])
-		default:
-			usage()
+	case 2:
+		parseArgv(argv[1], "balance")
+		balance(publicKey, argv[1:])
+	case 5:
+		parseSpend(publicKey, argv[1:])
+		spend(publicKey, argv[1:])
+	default:
+		usage()
 	}
 }
