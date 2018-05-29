@@ -16,7 +16,8 @@ cd UTXO
 ./network/byfn.sh up
 ```
 
-If you want to play with it you need to create a Money supply, to do so:
+If you want to play with it you need to create a Money supply, to do so,
+copy/paste this is in your terminal and change the value of owner: Alice to the public key of Alice (see below)
 
 ```
 docker exec -t alice peer chaincode invoke -o orderer.example.com:7050  --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C ptwist -n Ptwist -c '{"Args":["mint", "sign", "[{\"amount\":42.42,\"owner\":\"Alice\",\"label\":\"USD\"}]"]}'
