@@ -20,7 +20,7 @@ type Transaction	struct {
 /* ************************************************************************** */
 
 func	getQueryCommand(owner string) string {
-	return fmt.Sprintf(`peer chaincode invoke -o orderer.example.com:7050  --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C mychannel -n mycc -c '{"Args":["get", "%s"]}'`, owner)
+	return fmt.Sprintf(`peer chaincode query -o orderer.example.com:7050  --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem  -C ptwist -n Ptwist -c '{"Args":["get", "%s"]}'`, owner)
 }
 
 /* ************************************************************************** */
