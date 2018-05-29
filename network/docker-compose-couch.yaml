@@ -24,7 +24,7 @@ services:
     networks:
       - byfn
 
-  peer0.org1.example.com:
+  peer0.MEDSOS.example.com:
     environment:
       - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
       - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0:5984
