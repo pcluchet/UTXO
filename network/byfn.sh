@@ -209,7 +209,7 @@ function upgradeNetwork () {
   docker cp -a orderer.example.com:/var/hyperledger/production/orderer $LEDGERS_BACKUP/orderer.example.com
   docker-compose $COMPOSE_FILES up -d --no-deps orderer.example.com
 
-  for PEER in peer0.org1.example.com ; do
+  for PEER in peer0.MEDSOS.example.com ; do
     echo "Upgrading peer $PEER"
 
     # Stop the peer and backup its ledger
@@ -278,7 +278,7 @@ function replacePrivateKey () {
   # The next steps will replace the template's contents with the
   # actual values of the private key file names for the two CAs.
   CURRENT_DIR=$PWD
-  cd crypto-config/peerOrganizations/org1.example.com/ca/
+  cd crypto-config/peerOrganizations/MEDSOS.example.com/ca/
   PRIV_KEY=$(ls *_sk)
   cd "$CURRENT_DIR"
   sed $OPTS "s/CA1_PRIVATE_KEY/${PRIV_KEY}/g" docker-compose-e2e.yaml
@@ -404,14 +404,14 @@ function generateChannelArtifacts() {
 
   echo
   echo "#################################################################"
-  echo "#######    Generating anchor peer update for Org1MSP   ##########"
+  echo "#######    Generating anchor peer update for MEDSOSMSP   ########"
   echo "#################################################################"
   set -x
-  configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate ./channel-artifacts/Org1MSPanchors.tx -channelID $CHANNEL_NAME -asOrg Org1MSP
+  configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate ./channel-artifacts/MEDSOSMSPanchors.tx -channelID $CHANNEL_NAME -asOrg MEDSOSMSP
   res=$?
   set +x
   if [ $res -ne 0 ]; then
-    echo "Failed to generate anchor peer update for Org1MSP..."
+    echo "Failed to generate anchor peer update for MEDSOSMSP..."
     exit 1
   fi
 

@@ -26,13 +26,13 @@ Profiles:
         Consortiums:
             SampleConsortium:
                 Organizations:
-                    - *Org1
+                    - *MEDSOS
     TwoOrgsChannel:
         Consortium: SampleConsortium
         Application:
             <<: *ApplicationDefaults
             Organizations:
-                - *Org1
+                - *MEDSOS
             Capabilities:
                 <<: *ApplicationCapabilities
 
@@ -59,21 +59,21 @@ Organizations:
         # MSPDir is the filesystem path which contains the MSP configuration
         MSPDir: crypto-config/ordererOrganizations/example.com/msp
 
-    - &Org1
+    - &MEDSOS
         # DefaultOrg defines the organization which is used in the sampleconfig
         # of the fabric.git development environment
-        Name: Org1MSP
+        Name: MEDSOSMSP
 
         # ID to load the MSP definition as
-        ID: Org1MSP
+        ID: MEDSOSMSP
 
-        MSPDir: crypto-config/peerOrganizations/org1.example.com/msp
+        MSPDir: crypto-config/peerOrganizations/MEDSOS.example.com/msp
 
         AnchorPeers:
             # AnchorPeers defines the location of peers which can be used
             # for cross org gossip communication.  Note, this value is only
             # encoded in the genesis block in the Application section context
-            - Host: peer0.org1.example.com
+            - Host: peer0.MEDSOS.example.com
               Port: 7051
 
 ################################################################################
