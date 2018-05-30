@@ -7,6 +7,9 @@ version: '2'
 
 services:
 
+  ##################################################
+  ### ORDERER ######################################
+  ##################################################
   orderer.example.com:
     container_name: orderer.example.com
     image: hyperledger/fabric-orderer:$IMAGE_TAG
@@ -32,6 +35,9 @@ services:
     ports:
       - 7050:7050
 
+  ##################################################
+  ### MEDSOS ORGANISATION PEERS ####################
+  ##################################################
   peer0.MEDSOS.example.com:
     container_name: peer0.MEDSOS.example.com
     extends:
@@ -71,3 +77,46 @@ services:
     ports:
       - 8051:7051
       - 8053:7053
+
+  ##################################################
+  ### BFF ORGANISATION PEERS #######################
+  ##################################################
+  peer0.BFF.example.com:
+    container_name: peer0.BFF.example.com
+    extends:
+      file: peer-base.yaml
+      service: peer-base
+    environment:
+      - CORE_PEER_ID=peer0.BFF.example.com
+      - CORE_PEER_ADDRESS=peer0.BFF.example.com:9051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.BFF.example.com:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.BFF.example.com:9051
+      - CORE_PEER_LOCALMSPID=BFFMSP
+    volumes:
+        - /var/run/:/host/var/run/
+        - ../crypto-config/peerOrganizations/BFF.example.com/peers/peer0.BFF.example.com/msp:/etc/hyperledger/fabric/msp
+        - ../crypto-config/peerOrganizations/BFF.example.com/peers/peer0.BFF.example.com/tls:/etc/hyperledger/fabric/tls
+        - peer0.BFF.example.com:/var/hyperledger/production
+    ports:
+      - 9051:9051
+      - 9053:9053
+
+  peer1.BFF.example.com:
+    container_name: peer0.BFF.example.com
+    extends:
+      file: peer-base.yaml
+      service: peer-base
+    environment:
+      - CORE_PEER_ID=peer1.BFF.example.com
+      - CORE_PEER_ADDRESS=peer1.BFF.example.com:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.BFF.example.com:9051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.BFF.example.com:9051
+      - CORE_PEER_LOCALMSPID=BFFMSP
+    volumes:
+        - /var/run/:/host/var/run/
+        - ../crypto-config/peerOrganizations/BFF.example.com/peers/peer1.BFF.example.com/msp:/etc/hyperledger/fabric/msp
+        - ../crypto-config/peerOrganizations/BFF.example.com/peers/peer1.BFF.example.com/tls:/etc/hyperledger/fabric/tls
+        - peer1.BFF.example.com:/var/hyperledger/production
+    ports:
+      - 10051:9051
+      - 10053:9053

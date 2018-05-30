@@ -21,4 +21,14 @@ PeerOrgs:
     Template:
       Count: 2
     Users:
-      Count: 1 
+      Count: 0
+  # ---------------------------------------------------------------------------
+  # Organization BFF
+  # ---------------------------------------------------------------------------
+  - Name: BFF
+    Domain: BFF.example.com
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+    Users:
+      Count: 0

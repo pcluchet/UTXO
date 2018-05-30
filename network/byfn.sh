@@ -171,9 +171,9 @@ function networkUp () {
     exit 1
   fi
   # now run the end to end script
-  docker exec alice scripts/script.sh $CHANNEL_NAME $CLI_DELAY $LANGUAGE $CLI_TIMEOUT
+  docker exec medsos_admin scripts/script.sh
   if [ $? -ne 0 ]; then
-    echo "ERROR !!!! Test failed"
+    echo "ERROR !!!! Test failed (MEDSOS)"
     exit 1
   fi
 }
@@ -201,8 +201,8 @@ function upgradeNetwork () {
   fi
 
   # removing the cli container
-  docker-compose $COMPOSE_FILES stop alice
-  docker-compose $COMPOSE_FILES up -d --no-deps alice
+  docker-compose $COMPOSE_FILES stop medsos_admin
+  docker-compose $COMPOSE_FILES up -d --no-deps medsos_admin
 
   echo "Upgrading orderer"
   docker-compose $COMPOSE_FILES stop orderer.example.com
@@ -230,7 +230,7 @@ function upgradeNetwork () {
     docker-compose $COMPOSE_FILES up -d --no-deps $PEER
   done
 
-  docker exec alice scripts/upgrade_to_v11.sh $CHANNEL_NAME $CLI_DELAY $LANGUAGE $CLI_TIMEOUT
+  docker exec medsos_admin scripts/upgrade_to_v11.sh $CHANNEL_NAME $CLI_DELAY $LANGUAGE $CLI_TIMEOUT
   if [ $? -ne 0 ]; then
     echo "ERROR !!!! Test failed"
     exit 1

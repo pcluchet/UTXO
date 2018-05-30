@@ -30,10 +30,12 @@ echo "Channel name : "$CHANNEL_NAME
 . scripts/utils.sh
 
 createChannel() {
+	ORG=${1}
+
+	setGlobals 0 ${ORG}
 	echo
 	echo "--------------------------------------------> $CORE_PEER_ADDRESS <--------------------------------------------------"
 	echo
-
 	if [ -z "$CORE_PEER_TLS_ENABLED" -o "$CORE_PEER_TLS_ENABLED" = "false" ]; then
                 set -x
 		peer channel create -o orderer.example.com:7050 -c $CHANNEL_NAME -f ./channel-artifacts/channel.tx >&log.txt
@@ -52,7 +54,7 @@ createChannel() {
 }
 
 joinChannel () {
-	for org in MEDSOS ; do
+	for org in MEDSOS BFF ; do
 		for peer in 0 1 ; do
 			joinChannelWithRetry $peer $org
 			echo "===================== peer${peer}.${org} joined on the channel \"$CHANNEL_NAME\" ===================== "
@@ -64,7 +66,6 @@ joinChannel () {
 
 ## Create channel
 echo "Creating channel..."
-setGlobals 0 MEDSOS
 createChannel
 
 ## Join all the peers to the channel
@@ -73,15 +74,19 @@ joinChannel
 
 ## Set the anchor peers for each org in the channel
 echo "Updating anchor peers for MEDSOS..."
-updateAnchorPeers 0 "MEDSOS"
+updateAnchorPeers 0 MEDSOS
+echo "Updating anchor peers for BFF..."
+updateAnchorPeers 0 BFF
 
 ## Install chaincode on peer0.MEDSOS
 echo "Installing chaincode on peer0.MEDSOS..."
-installChaincode 0 "MEDSOS" 
+installChaincode 0 MEDSOS
+echo "Installing chaincode on peer0.BFF..."
+installChaincode 0 BFF
 
 # Instantiate chaincode on peer0.MEDSOS
 echo "Instantiating chaincode on peer0.MEDSOS..."
-instantiateChaincode 0 "MEDSOS"
+instantiateChaincode 0 MEDSOS
 
 << --MULTILINE-COMMENT--
 # Query chaincode on peer0.org1

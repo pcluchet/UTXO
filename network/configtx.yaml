@@ -27,12 +27,14 @@ Profiles:
             SampleConsortium:
                 Organizations:
                     - *MEDSOS
+                    - *BFF
     TwoOrgsChannel:
         Consortium: SampleConsortium
         Application:
             <<: *ApplicationDefaults
             Organizations:
                 - *MEDSOS
+                - *BFF
             Capabilities:
                 <<: *ApplicationCapabilities
 
@@ -74,6 +76,22 @@ Organizations:
             # for cross org gossip communication.  Note, this value is only
             # encoded in the genesis block in the Application section context
             - Host: peer0.MEDSOS.example.com
+              Port: 7051
+    - &BFF
+        # DefaultOrg defines the organization which is used in the sampleconfig
+        # of the fabric.git development environment
+        Name: BFFMSP
+
+        # ID to load the MSP definition as
+        ID: BFFMSP
+
+        MSPDir: crypto-config/peerOrganizations/BFF.example.com/msp
+
+        AnchorPeers:
+            # AnchorPeers defines the location of peers which can be used
+            # for cross org gossip communication.  Note, this value is only
+            # encoded in the genesis block in the Application section context
+            - Host: peer0.BFF.example.com
               Port: 7051
 
 ################################################################################
