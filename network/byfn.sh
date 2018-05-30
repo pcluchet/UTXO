@@ -414,6 +414,13 @@ function generateChannelArtifacts() {
     echo "Failed to generate anchor peer update for MEDSOSMSP..."
     exit 1
   fi
+  configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate ./channel-artifacts/BFFMSPanchors.tx -channelID $CHANNEL_NAME -asOrg BFFMSP
+  res=$?
+  set +x
+  if [ $res -ne 0 ]; then
+    echo "Failed to generate anchor peer update for BFFMSP..."
+    exit 1
+  fi
 
 }
 
