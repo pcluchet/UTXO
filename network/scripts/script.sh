@@ -30,12 +30,11 @@ echo "Channel name : "$CHANNEL_NAME
 . scripts/utils.sh
 
 createChannel() {
-	ORG=${1}
-
-	setGlobals 0 ${ORG}
 	echo
 	echo "--------------------------------------------> $CORE_PEER_ADDRESS <--------------------------------------------------"
 	echo
+
+	setGlobals 0 MEDSOS
 	if [ -z "$CORE_PEER_TLS_ENABLED" -o "$CORE_PEER_TLS_ENABLED" = "false" ]; then
                 set -x
 		peer channel create -o orderer.example.com:7050 -c $CHANNEL_NAME -f ./channel-artifacts/channel.tx >&log.txt

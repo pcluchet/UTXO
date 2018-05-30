@@ -88,9 +88,9 @@ services:
       service: peer-base
     environment:
       - CORE_PEER_ID=peer0.BFF.example.com
-      - CORE_PEER_ADDRESS=peer0.BFF.example.com:9051
-      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.BFF.example.com:9051
-      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.BFF.example.com:9051
+      - CORE_PEER_ADDRESS=peer0.BFF.example.com:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.BFF.example.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.BFF.example.com:7051
       - CORE_PEER_LOCALMSPID=BFFMSP
     volumes:
         - /var/run/:/host/var/run/
@@ -98,8 +98,8 @@ services:
         - ../crypto-config/peerOrganizations/BFF.example.com/peers/peer0.BFF.example.com/tls:/etc/hyperledger/fabric/tls
         - peer0.BFF.example.com:/var/hyperledger/production
     ports:
-      - 9051:9051
-      - 9053:9053
+      - 9051:7051
+      - 9053:7053
 
   peer1.BFF.example.com:
     container_name: peer0.BFF.example.com
@@ -108,9 +108,9 @@ services:
       service: peer-base
     environment:
       - CORE_PEER_ID=peer1.BFF.example.com
-      - CORE_PEER_ADDRESS=peer1.BFF.example.com:9051
-      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.BFF.example.com:9051
-      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.BFF.example.com:9051
+      - CORE_PEER_ADDRESS=peer1.BFF.example.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.BFF.example.com:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.BFF.example.com:7051
       - CORE_PEER_LOCALMSPID=BFFMSP
     volumes:
         - /var/run/:/host/var/run/
@@ -118,5 +118,5 @@ services:
         - ../crypto-config/peerOrganizations/BFF.example.com/peers/peer1.BFF.example.com/tls:/etc/hyperledger/fabric/tls
         - peer1.BFF.example.com:/var/hyperledger/production
     ports:
-      - 10051:9051
-      - 10053:9053
+      - 10051:7051
+      - 10053:7053

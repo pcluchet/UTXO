@@ -124,7 +124,7 @@ services:
       - CORE_LOGGING_LEVEL=DEBUG
       - CORE_LOGGING_LEVEL=INFO
       - CORE_PEER_ID=bff_admin
-      - CORE_PEER_ADDRESS=peer0.BFF.example.com:9051
+      - CORE_PEER_ADDRESS=peer0.BFF.example.com:7051
       - CORE_PEER_LOCALMSPID=BFFMSP
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/BFF.example.com/peers/peer0.BFF.example.com/tls/server.crt
