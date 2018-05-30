@@ -1,7 +1,7 @@
 # UTXO
 
 ## Description
-This project is an implementation of UTXO (Unspent Transaction Output),  as seen in the [Whitepaper](https://arxiv.org/pdf/1801.10228.pdf) at Chapter 5
+This project is an implementation of UTXO (Unspent Transaction Output),  as seen in the [Whitepaper](https://arxiv.org/pdf/1801.10228.pdf) at Chapter 5.  
 Coded in Golang, on top of Hyperledger Fabric.
 
 ## Installation and Usage
