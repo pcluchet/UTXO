@@ -7,7 +7,35 @@
  */
 /*
  * UTXO implementation
- */
+ *
+ * How to use :
+ *
+ * --- Minting ---
+ *	first argument	: "mint"
+ *	second argument	: a signature (not implemented yet, any string will do)
+ *	third argument	: list of outputs in json, in the form (amount, owner, label)
+ *		example		: [{"amount":42.42, "owner": "USER PUBLIC KEY", "label": "USD"}]
+ *					  Label can be any string to identify the currency in the system
+ *					  One's public key can obtained by using the wallet,
+ 					  or by deriving it from its private key or certificate
+ *
+ *
+ * --- Spending ---
+ *	first argument	: "spend"
+ *	second argument	: list of inputs in json, in the form (txid, j)
+ *		example		: [{"txid": "SOME TXID", "j": 0}]
+ *	third argument	: list of outputs in json, in the form (amount, owner, label)
+ *		example		: [{"amount":42.42, "owner": "USER PUBLIC KEY", "label": "USD"}]
+ *
+ *
+ *
+ * --- Getting unspents coins for said public key ---
+ *	first argument	: "get"
+ *	second argument	: Some user pulic key
+ *					  It returns a list of the unspent coins for said owner, in json format
+ *			example	: [{"txid": "SOME TXID", "j": 0}, {"txid": "SOME OTHER TXID", "j": 3}]
+ *
+*/
 
 package main
 
