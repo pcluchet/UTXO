@@ -1,3 +1,5 @@
+package main
+
 /*
  * UTXO implementation
  *
@@ -29,8 +31,6 @@
  *			example	: [{"txid": "SOME TXID", "j": 0}, {"txid": "SOME OTHER TXID", "j": 3}]
  *
 */
-
-package main
 
 import (
 	"bytes"
