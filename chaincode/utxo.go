@@ -1,8 +1,36 @@
+package main
+
 /*
  * UTXO implementation
- */
-
-package main
+ *
+ * How to use :
+ *
+ * --- Minting ---
+ *	first argument	: "mint"
+ *	second argument	: a signature (not implemented yet, any string will do)
+ *	third argument	: list of outputs in json, in the form (amount, owner, label)
+ *		example		: [{"amount":42.42, "owner": "USER PUBLIC KEY", "label": "USD"}]
+ *					  Label can be any string to identify the currency in the system
+ *					  One's public key can obtained by using the wallet,
+ 					  or by deriving it from its private key or certificate
+ *
+ *
+ * --- Spending ---
+ *	first argument	: "spend"
+ *	second argument	: list of inputs in json, in the form (txid, j)
+ *		example		: [{"txid": "SOME TXID", "j": 0}]
+ *	third argument	: list of outputs in json, in the form (amount, owner, label)
+ *		example		: [{"amount":42.42, "owner": "USER PUBLIC KEY", "label": "USD"}]
+ *
+ *
+ *
+ * --- Getting unspents coins for said public key ---
+ *	first argument	: "get"
+ *	second argument	: Some user pulic key
+ *					  It returns a list of the unspent coins for said owner, in json format
+ *			example	: [{"txid": "SOME TXID", "j": 0}, {"txid": "SOME OTHER TXID", "j": 3}]
+ *
+*/
 
 import (
 	"bytes"
@@ -17,32 +45,7 @@ import (
 
 	"github.com/hyperledger/fabric/core/chaincode/lib/cid"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"github.com/hyperledger/fabric/protos/peer"
 )
-
-// SimpleAsset implements a simple chaincode to manage an asset
-type SimpleAsset struct {
-}
-
-type Input struct {
-	Txid string
-	J    int
-}
-
-type Inputs []Input
-
-type Output struct {
-	Amount json.Number
-	Owner  string
-	Label  string
-}
-
-type Outputs []Output
-
-type UserUnspents struct {
-	User     string
-	Unspents []byte
-}
 
 const (
 	shift = 64 - 11 - 1
@@ -92,56 +95,6 @@ func Round(x float64) float64 {
 		bits &^= fracMask >> e
 	}
 	return math.Float64frombits(bits)
-}
-
-// Init is called during chaincode instantiation to initialize any
-// data. Note that chaincode upgrade also calls this function to reset
-// or to migrate data.
-func (t *SimpleAsset) Init(stub shim.ChaincodeStubInterface) peer.Response {
-	return shim.Success(nil)
-}
-
-// Invoke is called per transaction on the chaincode. Each transaction is
-// either a 'get' or a 'set' on the asset created by Init function. The Set
-// method may create a new asset by specifying a new key-value pair.
-func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
-	// Extract the function and args from the transaction proposal
-	fn, args := stub.GetFunctionAndParameters()
-
-	fmt.Printf("Invoque Request\n")
-
-	var result string
-	var err error
-	if fn == "set" {
-		result, err = set(stub, args)
-	} else if fn == "get" {
-
-		result, err = get(stub, args)
-	} else if fn == "gethistory" {
-
-		result, err = gethistory(stub, args)
-	} else if fn == "spend" {
-
-		result, err = spend(stub, args)
-	} else if fn == "mint" {
-
-		result, err = mint(stub, args)
-	} else if fn == "delete" {
-
-		result, err = delete(stub, args)
-	} else if fn == "getUnspentForUser" {
-
-		result, err = getUnspentForUser(stub, args)
-	} else {
-
-		return shim.Error("inadequate key sent, aborting")
-	}
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-
-	// Return the result as success payload
-	return shim.Success([]byte(result))
 }
 
 // Set stores the asset (both key and value) on the ledger. If the key exists,
@@ -218,7 +171,7 @@ func getUnspentForUser(stub shim.ChaincodeStubInterface, args []string) (string,
 	return string(value), nil
 }
 
-func gethistory(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+func getHistory(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	if len(args) != 1 {
 		return "", fmt.Errorf("Incorrect arguments. Expecting a key")
 	}
@@ -975,7 +928,7 @@ func trimPemPubKey(key string) string {
 // and performs the transaction the UTXO way
 func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	//TODO:
-	//[ ] args[2] sign
+	//[ ] args[2] sign
 	//[x] check amount of params
 
 	if len(args) != 3 {
@@ -1053,10 +1006,4 @@ func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
 	}
 
 	return string(ret), nil
-}
-
-func main() {
-	if err := shim.Start(new(SimpleAsset)); err != nil {
-		fmt.Printf("Error starting SimpleAsset chaincode: %s", err)
-	}
 }
