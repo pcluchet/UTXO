@@ -1,10 +1,3 @@
-/**
- * File              : utxo.go
- * Author            : jle-quel <jle-quel@student.42.us.org>
- * Date              : 01.06.2018
- * Last Modified Date: 01.06.2018
- * Last Modified By  : jle-quel <jle-quel@student.42.us.org>
- */
 /*
  * UTXO implementation
  *
@@ -41,12 +34,185 @@ package main
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
+	"math"
 	"strconv"
+	"strings"
 
+	"github.com/hyperledger/fabric/core/chaincode/lib/cid"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
+
+const (
+	shift = 64 - 11 - 1
+	bias  = 1023
+	mask  = 0x7FF
+)
+
+// Round returns the nearest integer, rounding half away from zero.
+// This function is available natively in Go 1.10
+//
+// Special cases are:
+//	Round(±0) = ±0
+//	Round(±Inf) = ±Inf
+//	Round(NaN) = NaN
+func Round(x float64) float64 {
+	// Round is a faster implementation of:
+	//
+	// func Round(x float64) float64 {
+	//   t := Trunc(x)
+	//   if Abs(x-t) >= 0.5 {
+	//     return t + Copysign(1, x)
+	//   }
+	//   return t
+	// }
+	const (
+		signMask = 1 << 63
+		fracMask = 1<<shift - 1
+		half     = 1 << (shift - 1)
+		one      = bias << shift
+	)
+
+	bits := math.Float64bits(x)
+	e := uint(bits>>shift) & mask
+	if e < bias {
+		// Round abs(x) < 1 including denormals.
+		bits &= signMask // +-0
+		if e == bias-1 {
+			bits |= one // +-1
+		}
+	} else if e < bias+shift {
+		// Round any abs(x) >= 1 containing a fractional component [0,1).
+		//
+		// Numbers with larger exponents are returned unchanged since they
+		// must be either an integer, infinity, or NaN.
+		e -= bias
+		bits += half >> e
+		bits &^= fracMask >> e
+	}
+	return math.Float64frombits(bits)
+}
+
+// Set stores the asset (both key and value) on the ledger. If the key exists,
+// it will override the value with the new one
+func set(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+	if len(args) != 2 {
+		return "", fmt.Errorf("Incorrect arguments. Expecting a key and a value")
+	}
+
+	err := stub.PutState(args[0], []byte(args[1]))
+	if err != nil {
+		return "", fmt.Errorf("Failed to set asset: %s", args[0])
+	}
+
+	a := make([]string, 3)
+
+	a[0] = "case0"
+	a[1] = "case 1"
+
+	value, errr := stub.CreateCompositeKey("objtt", a)
+	fmt.Printf(value)
+	//vl := stub.SplitCompositeKey(value);
+
+	//fmt.Printf(vl);
+
+	if errr != nil {
+		return "", fmt.Errorf("Failed to set asset: %s", args[0])
+	}
+	return args[1], nil
+}
+
+func delete(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+	if len(args) != 2 {
+		return "", fmt.Errorf("Incorrect arguments. Expecting a key and a value")
+	}
+
+	err := stub.DelState(args[0])
+	if err != nil {
+		return "", fmt.Errorf("Failed to delete asset: %s", args[0])
+	}
+
+	return args[1], nil
+}
+
+// Get returns the value of the specified asset key
+func get(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+	if len(args) != 1 {
+		return "", fmt.Errorf("Incorrect arguments. Expecting a key")
+	}
+
+	value, err := stub.GetState(args[0])
+	if err != nil {
+		return "", fmt.Errorf("Failed to get asset: %s with error: %s", args[0], err)
+	}
+	if value == nil {
+		return "", fmt.Errorf("Asset not found: %s", args[0])
+	}
+	return string(value), nil
+}
+
+// Get returns the value of the specified asset key
+func getUnspentForUser(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+	if len(args) != 1 {
+		return "", fmt.Errorf("Incorrect arguments. Expecting a user")
+	}
+
+	value, err := stub.GetState(args[0])
+	if err != nil {
+		return "", fmt.Errorf("Failed to get asset: %s with error: %s", args[0], err)
+	}
+	if value == nil {
+		return "", fmt.Errorf("Asset not found: %s", args[0])
+	}
+	return string(value), nil
+}
+
+func getHistory(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+	if len(args) != 1 {
+		return "", fmt.Errorf("Incorrect arguments. Expecting a key")
+	}
+
+	value, err := stub.GetHistoryForKey(args[0])
+
+	if err != nil {
+		return "", fmt.Errorf("Failed to get asset: %s with error: %s", args[0], err)
+	}
+	if value == nil {
+		return "", fmt.Errorf("Asset not found: %s", args[0])
+	}
+
+	var history string
+	history = "\n"
+
+	for value.HasNext() {
+		history = fmt.Sprintf("%s%s", history, fmt.Sprintln(value.Next()))
+	}
+
+	return string(history), nil
+}
+
+func decode_io(arg string, adress interface{}) error {
+
+	b := bytes.NewReader([]byte(arg))
+	fmt.Printf("arg = %s\n", arg)
+
+	err := json.NewDecoder(b).Decode(adress)
+
+	if err != nil {
+		return fmt.Errorf("Error %s", err)
+	}
+
+	if adress == nil {
+		return fmt.Errorf("nil adress given")
+	}
+
+	fmt.Printf("Parsed at io level : %+v", adress)
+	return nil
+}
 
 func delete_inputs(stub shim.ChaincodeStubInterface, inputs Inputs) error {
 
@@ -285,6 +451,42 @@ func set_outputs(stub shim.ChaincodeStubInterface, txid string, outputs Outputs,
 		i++
 	}
 	return nil
+}
+
+//This function mint the coins given in arg[1] (outputs)
+func mint(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+	//TODO:
+	//Arg[0] is a key to identify CB
+	//Arg[2] is sign
+
+	fmt.Println("Minting")
+	var outputs Outputs
+	ret := "coin minted"
+
+	decode_outputs_fail := decode_io(args[1], &outputs)
+	if decode_outputs_fail != nil {
+		return "", fmt.Errorf("Error in output decoding : %s", decode_outputs_fail)
+	}
+
+	fmt.Println("\n\n\n\n\nGetting keys\n\n\n\n")
+	keys, fail := get_keys_for_owners(stub, outputs, nil)
+	if fail != nil {
+		return "", fmt.Errorf("Error:  %s", fail)
+	}
+
+	txid := stub.GetTxID()
+	fmt.Println("Minting with txid=", txid)
+	set_outputs_fail := set_outputs(stub, txid, outputs, nil, &keys, "")
+	if set_outputs_fail != nil {
+		fmt.Println("Error decoding outputs")
+		return "", fmt.Errorf("Error in outputs : %s", set_outputs_fail)
+	}
+	err := commit_updated_keys(stub, keys)
+	if err != nil {
+		return "", fmt.Errorf("Err : %s", err)
+	}
+
+	return string(ret), nil
 }
 
 // given an array of byte representing json format of an output,
@@ -615,4 +817,193 @@ func user_already_in_list(new_user UserUnspents, UsersToUpdate []UserUnspents) b
 	}
 	return false
 
+}
+
+// this function generate a list of UserUnspents containing all the users
+// mentionned in outputs or inputs
+func get_keys_for_owners(stub shim.ChaincodeStubInterface, outputs Outputs, inputs Inputs) ([]UserUnspents, error) {
+	//TODO
+	//[ ] tidy, restructure flow (two putstate...)
+
+	var err error
+	//var rejson []byte
+	var UsersToUpdate []UserUnspents
+	var current_user UserUnspents
+
+	for _, output := range outputs {
+
+		//fmt.Println("Handling now : key[%s] value[%s]\n", kkk, output)
+		current_user.User = output.Owner
+		if !user_already_in_list(current_user, UsersToUpdate) {
+			current_user.Unspents, err = stub.GetState(output.Owner)
+			if err != nil {
+				return UsersToUpdate, fmt.Errorf("Errgk : %s", err)
+			}
+
+			UsersToUpdate = append(UsersToUpdate, current_user)
+		}
+	}
+
+	if inputs != nil {
+		for _, input := range inputs {
+			var output Output
+			var tran []byte
+			retreiving_key := fmt.Sprintf("%s_%d", input.Txid, input.J)
+			fmt.Println("Retreiving key is :%s", retreiving_key)
+			tran, err = stub.GetState(retreiving_key)
+			if err != nil {
+				return UsersToUpdate, fmt.Errorf("Errgk : %s", err)
+			}
+			if tran == nil {
+				return UsersToUpdate, fmt.Errorf("Err : failed to retreive transaction")
+			}
+
+			fmt.Println(string(tran))
+
+			ret := decode_single_transaction(string(tran), &output)
+			if ret != nil {
+				return UsersToUpdate, fmt.Errorf("Errgk : %s", ret)
+			}
+			current_user.User = output.Owner
+			if !user_already_in_list(current_user, UsersToUpdate) {
+				current_user.Unspents, err = stub.GetState(output.Owner)
+				UsersToUpdate = append(UsersToUpdate, current_user)
+			}
+		}
+	}
+
+	fmt.Println("\n\nTo update ::: \n\n")
+	for _, val := range UsersToUpdate {
+		fmt.Println("To update : %s", val.User)
+	}
+
+	for key, usr := range UsersToUpdate {
+
+		fmt.Println("key = %d, user : %s", key, usr.User)
+
+		var coinlist Inputs
+
+		if usr.Unspents != nil {
+			b := bytes.NewReader(usr.Unspents)
+			err := json.NewDecoder(b).Decode(&coinlist)
+
+			if err != nil {
+				return UsersToUpdate, fmt.Errorf("Errgki : %s", err)
+			}
+			for _, coin := range coinlist {
+				fmt.Println("txid = %s, id : %d", coin.Txid, coin.J)
+			}
+		}
+	}
+
+	return UsersToUpdate, nil
+}
+
+func pem_encode_pubkey(publicKey *ecdsa.PublicKey) string {
+	x509EncodedPub, _ := x509.MarshalPKIXPublicKey(publicKey)
+	pemEncodedPub := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: x509EncodedPub})
+	return string(pemEncodedPub)
+}
+
+func getPemPublicKeyOfCreator(stub shim.ChaincodeStubInterface) (string, error) {
+
+	cert, err := cid.GetX509Certificate(stub)
+	if err != nil {
+		return "", fmt.Errorf("Error : %s", err)
+	}
+	ecPublicKey := cert.PublicKey.(*ecdsa.PublicKey)
+	//fmt.Println(ecPublicKey)
+	//fmt.Printf("PUB : %x\n", ecdPublicKey)
+	return pem_encode_pubkey(ecPublicKey), nil
+}
+
+func trimPemPubKey(key string) string {
+	key = strings.Replace(key, "\n", "", -1)
+	key = strings.Replace(key, "-----BEGIN PUBLIC KEY-----", "", -1)
+	key = strings.Replace(key, "-----END PUBLIC KEY-----", "", -1)
+	return key
+}
+
+// This function takes inputs in arg[0] and outputs in arg[1],
+// and performs the transaction the UTXO way
+func spend(stub shim.ChaincodeStubInterface, args []string) (string, error) {
+	//TODO:
+	//[ ] args[2] sign
+	//[x] check amount of params
+
+	if len(args) != 3 {
+		fmt.Println(args)
+		return "", fmt.Errorf("Incorrect amount of arguments. Expecting 3, have = %d, %s", len(args), args)
+	}
+
+	spender, er := getPemPublicKeyOfCreator(stub)
+	if er != nil {
+		return "", fmt.Errorf("Cannot get creator of the transaction : %s", er)
+	}
+	spender = trimPemPubKey(spender)
+	fmt.Printf("spender : %s \n", spender)
+
+	fmt.Println("Spend transaction triggered")
+
+	var inputs Inputs
+	var outputs Outputs
+	ret := "spending ok"
+
+	decode_inputs_fail := decode_io(args[0], &inputs)
+	if decode_inputs_fail != nil {
+		return "", fmt.Errorf("Error decoding inputs : %s", decode_inputs_fail)
+	}
+	check_in_fail, total_in, label := check_inputs(stub, inputs, spender)
+	if check_in_fail != nil {
+		return "", fmt.Errorf("Error checking inputs : %s", check_in_fail)
+	}
+
+	decode_outputs_fail := decode_io(args[1], &outputs)
+	if decode_outputs_fail != nil {
+		return "", fmt.Errorf("Error decoding outputs")
+	}
+
+	check_out_fail, total_out := check_outputs(outputs, label)
+	if check_out_fail != nil {
+		return "", fmt.Errorf("Error checking outputs : %s", check_out_fail)
+	}
+
+	if total_in < total_out {
+		return "", fmt.Errorf("Error : input amount is smaller than output amount")
+	}
+
+	if total_in > total_out {
+		return "", fmt.Errorf("Error : input amount is bigger than output amount")
+	}
+
+	deletion_fail := delete_inputs(stub, inputs)
+	if deletion_fail != nil {
+		return "", fmt.Errorf("Error deleting inputs in ledger : %s", deletion_fail)
+	}
+
+	keys, fail := get_keys_for_owners(stub, outputs, inputs)
+	if fail != nil {
+
+		return "", fmt.Errorf("Error: %s", fail)
+	}
+	fmt.Printf("%+v", keys)
+
+	txid := stub.GetTxID()
+	write_fail := set_outputs(stub, txid, outputs, inputs, &keys, spender)
+	if write_fail != nil {
+		return "", fmt.Errorf("Error writing new tokens, possible token destruction happened /!\\ ")
+	}
+
+	fmt.Printf("%+v", keys)
+
+	fail = delete_old_keys(&keys, inputs)
+	if fail != nil {
+		return "", fmt.Errorf("Error: %s", fail)
+	}
+	fail = commit_updated_keys(stub, keys)
+	if fail != nil {
+		return "", fmt.Errorf("Error: %s", fail)
+	}
+
+	return string(ret), nil
 }

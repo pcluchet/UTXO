@@ -4,14 +4,12 @@ import "fmt"
 import "github.com/hyperledger/fabric/core/chaincode/shim"
 import "github.com/hyperledger/fabric/protos/peer"
 
-/* ************************************************************************** */
-/*	PUBLIC																	  */
-/* ************************************************************************** */
-
 // Init is called during chaincode instantiation to initialize any
 // data. Note that chaincode upgrade also calls this function to reset
 // or to migrate data.
 func (t *SimpleAsset) Init(stub shim.ChaincodeStubInterface) peer.Response {
+	fmt.Println("--------------------> Init <--------------------")
+
 	return shim.Success(nil)
 }
 
@@ -19,47 +17,42 @@ func (t *SimpleAsset) Init(stub shim.ChaincodeStubInterface) peer.Response {
 // either a 'get' or a 'set' on the asset created by Init function. The Set
 // method may create a new asset by specifying a new key-value pair.
 func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
-	// Extract the function and args from the transaction proposal
-	fn, args := stub.GetFunctionAndParameters()
+	var fct		string
+	var argv	[]string
+	var ret		string
+	var err		error
 
-	fmt.Printf("Invoque Request\n")
+	fmt.Println("--------------------> Invoke <--------------------")
+	fct, argv = stub.GetFunctionAndParameters()
 
-	var result string
-	var err error
-	if fn == "set" {
-		result, err = set(stub, args)
-	} else if fn == "get" {
-
-		result, err = get(stub, args)
-	} else if fn == "gethistory" {
-
-		result, err = gethistory(stub, args)
-	} else if fn == "spend" {
-
-		result, err = spend(stub, args)
-	} else if fn == "mint" {
-
-		result, err = mint(stub, args)
-	} else if fn == "delete" {
-
-		result, err = delete(stub, args)
-	} else if fn == "getUnspentForUser" {
-
-		result, err = getUnspentForUser(stub, args)
-	} else {
-
-		return shim.Error("inadequate key sent, aborting")
+	switch fct {
+		case "set":
+			ret, err = set(stub, argv)
+		case "get":
+			ret, err = get(stub, argv)
+		case "delete":
+			ret, err = delete(stub, argv)
+		case "spend":
+			ret, err = spend(stub, argv)
+		case "mint":
+			ret, err = mint(stub, argv)
+		case "gethistory":
+			ret, err = getHistory(stub, argv)
+		default:
+			return shim.Error("inadequate key sent, aborting")
 	}
+
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	// Return the result as success payload
-	return shim.Success([]byte(result))
+	return shim.Success([]byte(ret))
 }
 
 func main() {
-	if err := shim.Start(new(SimpleAsset)); err != nil {
+	var err	error
+
+	if err = shim.Start(new(SimpleAsset)); err != nil {
 		fmt.Printf("Error starting SimpleAsset chaincode: %s", err)
 	}
 }
